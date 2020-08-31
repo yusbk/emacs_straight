@@ -1135,8 +1135,7 @@ horizontal mode."
 
 
 (use-package ace-window
-  :disabled
-  :defer 3
+  ;; make backgound gray for different buffer with aw-background
   :bind ([S-return] . ace-window)
   :custom-face (aw-leading-char-face ((t (:inherit ace-jump-face-foreground :height 3.0))))
   :config
@@ -1164,7 +1163,6 @@ horizontal mode."
 (use-package golden-ratio
   ;; Resize windows with ratio https://github.com/roman/golden-ratio.el
   :straight t
-  :defer 5
   :bind* (:map my-personal-map
                ("V" . golden-ratio-mode))
   :diminish golden-ratio-mode
@@ -1175,7 +1173,6 @@ horizontal mode."
 
 (use-package transpose-frame
   :straight t
-  :defer 4
   :commands (transpose-frame)
   :init
   (use-package crux)
@@ -2488,7 +2485,8 @@ if there is displayed buffer that have shell it will use that window"
   ;; tags within start-endgroup will allow only one of those in a file
   ;; C-c C-q for setting tags
   (org-tag-persistent-alist '(("annent" . ?a)
-                              ("fhprofil" . ?p)
+                              ("prog" . ?p)
+                              ("fhi" . ?f)
                               (:startgroup . nil)
                               ("@work" . ?w)
                               ("@home" . ?h)
@@ -2743,7 +2741,7 @@ appropriate.  In tables, insert a new row or end the table."
                 ("NEXT" :foreground "purple" :weight bold)
                 ("DONE" :foreground "forest green" :weight bold)
                 ("HOLD" :foreground "magenta" :weight bold)
-                ("CANCELLED" :foreground "forest green" :weight bold)
+                ("CANCELLED" :foreground "dark green" :weight bold)
                 )))
 
 
@@ -2905,11 +2903,18 @@ made unique when necessary."
     "All other info for diary.")
   (defvar my-org-note (expand-file-name "notes.org" my-org-directory)
     "All other info for diary.")
+  (defvar my-org-meet (expand-file-name "meeting.org" my-org-directory)
+    "All other info for diary.")
+  (defvar my-org-cook (expand-file-name "cooking.org" my-org-directory)
+    "All other info for diary.")
+
 
   ;;Include all files under these folder in org-agenda-files
   (setq org-agenda-files `(,org-default-notes-file
                            ,my-org-todo
-                           ,my-org-misc))
+                           ,my-org-misc
+                           ,my-org-meet
+                           ,my-org-cook))
   (setq org-agenda-text-search-extra-files `(,my-org-note))
 
   :custom
@@ -2932,7 +2937,7 @@ made unique when necessary."
   (org-agenda-scheduled-leaders '("" "%2dx ") "I don't need to know that something is scheduled.  That's why it's appearing on the agenda in the first place.")
   (org-agenda-block-separator ?- "Use nice unicode character instead of ugly = to separate agendas:")
   (org-agenda-deadline-leaders '("Deadline: " "In %d days: " "OVERDUE %d day: ") "Make deadlines, especially overdue ones, stand out more:")
-  (org-agenda-current-time-string "? NOW ?")
+  (org-agenda-current-time-string "---> NOW <---")
   ;; The agenda is ugly by default. It doesn't properly align items and it
   ;; includes weird punctuation. Fix it:
   (org-agenda-prefix-format '((agenda . "%-12c%-14t%s")
@@ -2951,10 +2956,10 @@ made unique when necessary."
               ))
        (tags "@home"
              ((org-agenda-overriding-header "Samlet oppgaver:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT")))))
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))))
        (tags "REFILE"
              ((org-agenda-overriding-header "Refile:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT"))))))
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
       ((org-agenda-tag-filter-preset '("-@work"))))
      ("w" "Work Agenda"
       ((agenda "" nil)
@@ -2963,11 +2968,11 @@ made unique when necessary."
               (org-agenda-overriding-header "Dagens oppgaver:")
               ))
        (tags "@work"
-             ((org-agenda-overriding-header "Oppgavene som skal gjøres:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT")))))
+             ((org-agenda-overriding-header "Skal gjøres:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))))
        (tags "REFILE"
              ((org-agenda-overriding-header "Refile:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT"))))))
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
       ((org-agenda-tag-filter-preset '("-@home"))))
      ("d" "deadlines"
       ((agenda ""
@@ -2977,13 +2982,20 @@ made unique when necessary."
                 (org-deadline-warning-days 0)
                 (org-agenda-skip-deadline-prewarning-if-scheduled nil)
                 (org-agenda-skip-deadline-if-done nil)))))
+     ("m" "Meetings"
+      ((agenda "" nil)
+       (tags "@meeting")))
      ("b" "bibliography"
       ((tags "CATEGORY=\"bib\"+LEVEL=2"
              ((org-agenda-overriding-header "")))))
      ("u" "unscheduled"
       ((todo  "TODO"
               ((org-agenda-overriding-header "Unscheduled tasks")
-               (org-agenda-todo-ignore-with-date t)))))))
+               (org-agenda-todo-ignore-with-date t)))))
+     ("c" "Recepies"
+      ((agenda "" nil)
+       (tags "recepi")))
+     ))
 
   :config
   (defun my/org-agenda-mark-done (&optional _arg)
@@ -3001,6 +3013,7 @@ See `org-agenda-todo' for more details."
 
 
 (use-package org-capture
+  ;; %^G to use tags
   :straight org
   :bind*
   ("C-c c" . org-capture)
@@ -3009,20 +3022,20 @@ See `org-agenda-todo' for more details."
          ("C-c C-j" . my/org-capture-refile-and-jump))
    (:map my-personal-map
          ("p" . ybk/org-task-capture)))
-  ;; :init
-  ;; (setq org-default-notes-file (concat org-directory "refile.org"))
-  ;; (defconst my/org-inbox (concat org-directory "refile.org"))
-  ;; (defconst my/org-notes (concat org-directory "notes.org"))
   :custom
   (org-capture-templates
-   (quote (("a" "Avtale" entry (file+headline org-default-notes-file "Avtale")
-            "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
-           ("t" "task" entry (file  org-default-notes-file)
-            "* TODO \n:PROPERTIES:\n:CREATED: %U\n:END:\n%i")
-           ("m" "mail" entry (file org-default-notes-file)
+   (quote (("t" "Todo" entry (file org-default-notes-file)
+            "* TODO %? \nDEADLINE: %^T \n:PROPERTIES:\n:CREATED: %U\n:END:\n%i")
+           ("d" "Task" entry (file org-default-notes-file)
+            "* TODO %? \n:PROPERTIES:\n:CREATED: %U\n:END:\n%i")
+           ("m" "Meeting" entry (file my-org-meet)
+            "* %? \nSCHEDULED: %^T \n:PROPERTIES:\n:END:\n\n")
+           ("e" "Mail" entry (file org-default-notes-file)
             "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")
-           ("n" "note" entry (file my-org-note)
+           ("n" "Note" entry (file my-org-note)
             "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n %i")
+           ("r" "Recepies" entry (file my-org-cook)
+            "* %?\n:PROPERTIES:\n:TYPE:\n:CREATED: %U\n:END:\n %i")
            )))
   :config
   (defun my/org-capture-refile-and-jump ()
@@ -3087,12 +3100,11 @@ See `org-agenda-todo' for more details."
 
   ;; utk tukar tema f10-t
   (setq my-themes '(doom-nord
-                    doom-nord-light
-                    doom-vibrant
                     doom-acario-light
-                    doom-gruvbox
-                    doom-tomorrow-day
-                    doom-solarized-dark
+                    doom-acario-dark
+                    ;; doom-gruvbox
+                    ;; doom-tomorrow-day
+                    ;; doom-solarized-dark
                     ))
 
   (setq my-cur-theme nil)
