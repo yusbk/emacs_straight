@@ -2429,6 +2429,645 @@ if there is displayed buffer that have shell it will use that window"
 
 
 
+;;; Org
+(use-package org
+  ;; Org mode is a great thing. I use it for writing academic papers,
+  ;; managing my schedule, managing my references and notes, writing
+  ;; presentations, writing lecture slides, and pretty much anything
+  ;; else.
+  :straight org-plus-contrib
+  :bind
+  (("C-c l" . org-store-link)
+   ("C-'" . org-cycle-agenda-files) ; quickly access agenda files
+   :map org-mode-map
+   ("C-a" . org-beginning-of-line)
+   ("C-e" . org-end-of-line)
+   ;; Bind M-p and M-n to navigate heading more easily (these are bound to
+   ;; C-c C-p/n by default):
+   ("M-p" . my/org-previous-visible-heading)
+   ("M-n" . my/org-next-visible-heading)
+   ;; C-c C-t is bound to `org-todo' by default, but I want it
+   ;; bound to C-c t as well:
+   ("C-c t" . org-todo)
+   ;; Show hidden link
+   ("M-L" . my/org-toggle-link-display)
+   )
+  :hook
+  (org-mode . my/setup-org-mode)
+  :custom
+  (org-blank-before-new-entry nil)
+  (org-cycle-separator-lines 0)
+  (org-pretty-entities t "UTF8 all the things!")
+  (org-support-shift-select t "Holding shift and moving point should select things.")
+  (org-fontify-quote-and-verse-blocks t "Provide a special face for quote and verse blocks.")
+  (org-M-RET-may-split-line nil "M-RET may never split a line.")
+  (org-enforce-todo-dependencies t "Can't finish parent before children.")
+  (org-enforce-todo-checkbox-dependencies t "Can't finish parent before children.")
+  (org-hide-emphasis-markers t "Make words italic or bold, hide / and *.")
+  (org-catch-invisible-edits 'show-and-error "Don't let me edit things I can't see.")
+  (org-special-ctrl-a/e t "Make C-a and C-e work more like how I want:.")
+  (org-preview-latex-default-process 'imagemagick "Let org's preview mechanism use imagemagick instead of dvipng.")
+  ;; Let imenu go deeper into menu structure
+  (org-imenu-depth 6)
+  (org-image-actual-width '(300))
+  (org-blank-before-new-entry '((heading . nil)
+                                (plain-list-item . nil)))
+  ;; For whatever reason, I have to explicitely tell org how to open pdf
+  ;; links.  I use pdf-tools.  If pdf-tools isn't installed, it will use
+  ;; doc-view (shipped with Emacs) instead.
+  (org-file-apps
+   '((auto-mode . emacs)
+     ("\\.mm\\'" . default)
+     ("\\.x?html?\\'" . default)
+     ("\\.pdf\\'" . emacs)))
+  (org-highlight-latex-and-related '(latex entities) "set up fontlocking for latex")
+  (org-startup-with-inline-images t "Show inline images.")
+  (org-log-done 'time)
+  (org-goto-interface 'outline-path-completion)
+  (org-ellipsis "?")
+  ;; tags within start-endgroup will allow only one of those in a file
+  ;; C-c C-q for setting tags
+  (org-tag-persistent-alist '(("annent" . ?a)
+                              ("fhprofil" . ?p)
+                              (:startgroup . nil)
+                              ("@work" . ?w)
+                              ("@home" . ?h)
+                              (:endgroup . nil)))
+
+  ;; I keep my recipes in an org file and tag them based on what kind of
+  ;; dish they are.  The level one headings are names, and each gets two
+  ;; level two headings --- ingredients and directions.  To easily search via
+  ;; tag, I can restrict org-agenda to that buffer using < then hit m to
+  ;; match based on a tag.
+  (org-tags-exclude-from-inheritance
+   '("BREAKFAST" "DINNER" "DESSERT" "SIDE" "CHICKEN" "SEAFOOD"
+     "BEEF" "PASTA" "SOUP" "SNACK" "DRINK" "LAMB" "VEGETARIAN"))
+  ;; Org-refile lets me quickly move around headings in org files.  It
+  ;; plays nicely with org-capture, which I use to turn emails into TODOs
+  ;; easily (among other things, of course)
+  (org-outline-path-complete-in-steps nil)
+  (org-refile-allow-creating-parent-nodes 'confirm)
+  (org-refile-use-outline-path 'file)
+  (org-refile-targets '((org-agenda-files . (:maxlevel . 6)))"Up to 6 level deep headlines")
+
+  :custom-face
+  (org-block ((t (:inherit default))))
+
+  :config
+  ;; Exclude DONE state tasks from refile targets
+  (defun ybk/verify-refile-target ()
+    "Exclude todo keywords with a done state from refile targets"
+    (not (member (nth 2 (org-heading-components)) org-done-keywords)))
+
+  (setq org-refile-target-verify-function 'ybk/verify-refile-target)
+
+
+  ;; These are the programming languages org should teach itself:
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (latex . t)
+     (python . t)
+     (R . t)
+     (shell . t)))
+
+  ;; remove C-c [ from adding or excluding org file to front of agenda
+  ;; other then those specified in org-agenda-files
+  (unbind-key "C-c [" org-mode-map)
+  (unbind-key "C-c ]" org-mode-map)
+
+  (defun my/setup-org-mode ()
+    "Setup org-mode."
+    ;; An alist of symbols to prettify, see `prettify-symbols-alist'.
+    ;; Whether the symbol actually gets prettified is controlled by
+    ;; `org-pretty-compose-p', which see.
+    (setq-local prettify-symbols-unprettify-at-point nil)
+    (setq-local prettify-symbols-alist '(("*" . ?*)))
+    (setq-local prettify-symbols-compose-predicate #'my/org-pretty-compose-p))
+
+  (defun my/org-next-visible-heading (arg)
+    "Go to next heading and beginning of line."
+    (interactive "p")
+    (org-next-visible-heading arg)
+    (org-beginning-of-line))
+
+  (defun my/org-previous-visible-heading (arg)
+    "Go to previous heading and beginning of line."
+    (interactive "p")
+    (org-previous-visible-heading arg)
+    (org-beginning-of-line))
+
+  (defun my/org-pretty-compose-p (start end match)
+    "Return it if the symbol should be prettified.
+START and END are the start and end points, MATCH is the string
+match.  See also `prettify-symbols-compose-predicate'."
+    (if (string= match "*")
+        ;; prettify asterisks in headings
+        (and (org-match-line org-outline-regexp-bol)
+             (< end (match-end 0)))
+      ;; else rely on the default function
+      (prettify-symbols-default-compose-p start end match)))
+
+  ;; use font-lock-mode or this function
+  (defun my/org-toggle-link-display ()
+    "Toggle the literal or descriptive display of links."
+    (interactive)
+    (if org-descriptive-links
+        (progn (org-remove-from-invisibility-spec '(org-link))
+               (org-restart-font-lock)
+               (setq org-descriptive-links nil))
+      (progn (add-to-invisibility-spec '(org-link))
+             (org-restart-font-lock)
+             (setq org-descriptive-links t))))
+
+
+  ;; to enable <s[TAB] https://github.com/syl20bnr/spacemacs/issues/11798
+  ;; else M-x org-insert-structure-template
+  (require 'org-tempo)
+
+  ;; Code block shortcuts instead of <s[TAB]
+  (defun my-org-insert-src-block (src-code-type)
+    "Insert a `SRC-CODE-TYPE' type source code block in org-mode."
+    (interactive
+     (let ((src-code-types
+            '("emacs-lisp" "python" "sh" "calc" "R" "latex")))
+       (list (ivy-completing-read "Source code type: " src-code-types))))
+    (progn
+      (newline-and-indent)
+      (insert "#+END_SRC\n")
+      (previous-line 2)
+      (insert (format "#+BEGIN_SRC %s\n" src-code-type))
+      (org-edit-src-code)))
+
+  (bind-key "C-c s" #'my-org-insert-src-block org-mode-map)
+
+
+  ;; surround command https://github.com/alphapapa/unpackaged.el#surround-region-with-emphasis-or-syntax-characters
+  ;; block the text and use the surround selected KEY
+  ;;###autoload
+  (defmacro unpackaged/def-org-maybe-surround (&rest keys)
+    "Define and bind interactive commands for each of KEYS that surround the region or insert text.
+Commands are bound in `org-mode-map' to each of KEYS.  If the
+region is active, commands surround it with the key character,
+otherwise call `org-self-insert-command'."
+    `(progn
+       ,@(cl-loop for key in keys
+                  for name = (intern (concat "unpackaged/org-maybe-surround-" key))
+                  for docstring = (format "If region is active, surround it with \"%s\", otherwise call `org-self-insert-command'." key)
+                  collect `(defun ,name ()
+                             ,docstring
+                             (interactive)
+                             (if (region-active-p)
+                                 (let ((beg (region-beginning))
+                                       (end (region-end)))
+                                   (save-excursion
+                                     (goto-char end)
+                                     (insert ,key)
+                                     (goto-char beg)
+                                     (insert ,key)))
+                               (call-interactively #'org-self-insert-command)))
+                  collect `(define-key org-mode-map (kbd ,key) #',name))))
+
+  ;; activate surround command
+  (unpackaged/def-org-maybe-surround "~" "=" "*")
+
+
+  ;; how to use org-return https://github.com/alphapapa/unpackaged.el#org-return-dwim
+  (defun unpackaged/org-element-descendant-of (type element)
+    "Return non-nil if ELEMENT is a descendant of TYPE.
+TYPE should be an element type, like `item' or `paragraph'.
+ELEMENT should be a list like that returned by `org-element-context'."
+    ;; MAYBE: Use `org-element-lineage'.
+    (when-let* ((parent (org-element-property :parent element)))
+      (or (eq type (car parent))
+          (unpackaged/org-element-descendant-of type parent))))
+
+  ;;###autoload
+  (defun unpackaged/org-return-dwim (&optional default)
+    "A helpful replacement for `org-return'.  With prefix, call `org-return'.
+On headings, move point to position after entry content.  In
+lists, insert a new item or end the list, with checkbox if
+appropriate.  In tables, insert a new row or end the table."
+    ;; Inspired by John Kitchin: http://kitchingroup.cheme.cmu.edu/blog/2017/04/09/A-better-return-in-org-mode/
+    (interactive "P")
+    (if default
+        (org-return)
+      (cond
+       ;; Act depending on context around point.
+
+       ;; NOTE: I prefer RET to not follow links, but by uncommenting this block, links will be
+       ;; followed.
+
+       ;; ((eq 'link (car (org-element-context)))
+       ;;  ;; Link: Open it.
+       ;;  (org-open-at-point-global))
+
+       ((org-at-heading-p)
+        ;; Heading: Move to position after entry content.
+        ;; NOTE: This is probably the most interesting feature of this function.
+        (let ((heading-start (org-entry-beginning-position)))
+          (goto-char (org-entry-end-position))
+          (cond ((and (org-at-heading-p)
+                      (= heading-start (org-entry-beginning-position)))
+                 ;; Entry ends on its heading; add newline after
+                 (end-of-line)
+                 (insert "\n\n"))
+                (t
+                 ;; Entry ends after its heading; back up
+                 (forward-line -1)
+                 (end-of-line)
+                 (when (org-at-heading-p)
+                   ;; At the same heading
+                   (forward-line)
+                   (insert "\n")
+                   (forward-line -1))
+                 ;; FIXME: looking-back is supposed to be called with more arguments.
+                 (while (not (looking-back (rx (repeat 3 (seq (optional blank) "\n")))))
+                   (insert "\n"))
+                 (forward-line -1)))))
+
+       ((org-at-item-checkbox-p)
+        ;; Checkbox: Insert new item with checkbox.
+        (org-insert-todo-heading nil))
+
+       ((org-in-item-p)
+        ;; Plain list.  Yes, this gets a little complicated...
+        (let ((context (org-element-context)))
+          (if (or (eq 'plain-list (car context))  ; First item in list
+                  (and (eq 'item (car context))
+                       (not (eq (org-element-property :contents-begin context)
+                                (org-element-property :contents-end context))))
+                  (unpackaged/org-element-descendant-of 'item context))  ; Element in list item, e.g. a link
+              ;; Non-empty item: Add new item.
+              (org-insert-item)
+            ;; Empty item: Close the list.
+            ;; TODO: Do this with org functions rather than operating on the text. Can't seem to find the right function.
+            (delete-region (line-beginning-position) (line-end-position))
+            (insert "\n"))))
+
+       ((when (fboundp 'org-inlinetask-in-task-p)
+          (org-inlinetask-in-task-p))
+        ;; Inline task: Don't insert a new heading.
+        (org-return))
+
+       ((org-at-table-p)
+        (cond ((save-excursion
+                 (beginning-of-line)
+                 ;; See `org-table-next-field'.
+                 (cl-loop with end = (line-end-position)
+                          for cell = (org-element-table-cell-parser)
+                          always (equal (org-element-property :contents-begin cell)
+                                        (org-element-property :contents-end cell))
+                          while (re-search-forward "|" end t)))
+               ;; Empty row: end the table.
+               (delete-region (line-beginning-position) (line-end-position))
+               (org-return))
+              (t
+               ;; Non-empty row: call `org-return'.
+               (org-return))))
+       (t
+        ;; All other cases: call `org-return'.
+        (org-return)))))
+
+  ;; TODO keywords
+  (setq org-todo-keywords
+        (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+                (sequence "HOLD(h@/!)" "CANCELLED(c@/!)"))))
+
+  ;;Menyenagkan utk tukar kekunci TODO dengan C-c C-t KEKUNCI (org-todo-keywords)
+  (setq org-use-fast-todo-selection t)
+
+  ;;Tetapkan warna keyword
+  (setq org-todo-keyword-faces
+        (quote (("TODO" :foreground "red" :weight bold)
+                ("NEXT" :foreground "purple" :weight bold)
+                ("DONE" :foreground "forest green" :weight bold)
+                ("HOLD" :foreground "magenta" :weight bold)
+                ("CANCELLED" :foreground "forest green" :weight bold)
+                )))
+
+
+  ;;== Buat TAGS automatik
+  ;; Status TODO memberikan atau menukarkan tag secara automatisk. Cth ke status 'HOLD'
+  ;; memberikan tag 'HOLD' dan ke status 'DONE' membuang tag 'HOLD' dan 'CANCELLED'
+  (setq org-todo-state-tags-triggers
+        (quote (("CANCELLED" ("CANCELLED" . t))
+                ("HOLD" ("HOLD" . t))
+                (done ("HOLD"))
+                ("TODO" ("CANCELLED") ("HOLD"))
+                ("NEXT" ("CANCELLED") ("HOLD"))
+                ("DONE" ("CANCELLED") ("HOLD")))))
+
+  ;; Utk tukar status TODO menggunakan S-kiri dan S-kanan dan elakkan proses biasa seperti memasukkan masa
+  ;; atau nota utk HOLD atau CANCELLED sekiranya yang ingin dibuat ialah pertukaran status TODO sahaja
+  (setq org-treat-S-cursor-todo-selection-as-state-change nil)
+
+  ;;== Tukar parents status ke "DONE" hanya bila semua child tasks sudah ke status "DONE"
+  (setq org-enforce-todo-dependencies t
+        org-enforce-todo-checkbox-dependencies t)
+
+  ;;== Masukkan annotation di task bila tukar status
+  (setq org-log-done (quote time))
+
+  ;;== Masukkan annotation bila tukar tarikh DEADLINE
+  (setq org-log-redeadline (quote time))
+
+  ;;== Masukkan annotation bila tukar tarikh SCHEDULE
+  (setq org-log-reschedule (quote time))
+
+
+  ;; =================================
+  ;; Export HTML with usefule anchors
+  ;; https://github.com/alphapapa/unpackaged.el#export-to-html-with-useful-anchors
+  (define-minor-mode unpackaged/org-export-html-with-useful-ids-mode
+    "Attempt to export Org as HTML with useful link IDs.
+Instead of random IDs like \"#orga1b2c3\", use heading titles,
+made unique when necessary."
+    :global t
+    (if unpackaged/org-export-html-with-useful-ids-mode
+        (advice-add #'org-export-get-reference :override #'unpackaged/org-export-get-reference)
+      (advice-remove #'org-export-get-reference #'unpackaged/org-export-get-reference)))
+
+  (defun unpackaged/org-export-get-reference (datum info)
+    "Like `org-export-get-reference', except uses heading titles instead of random numbers."
+    (let ((cache (plist-get info :internal-references)))
+      (or (car (rassq datum cache))
+          (let* ((crossrefs (plist-get info :crossrefs))
+                 (cells (org-export-search-cells datum))
+                 ;; Preserve any pre-existing association between
+                 ;; a search cell and a reference, i.e., when some
+                 ;; previously published document referenced a location
+                 ;; within current file (see
+                 ;; `org-publish-resolve-external-link').
+                 ;;
+                 ;; However, there is no guarantee that search cells are
+                 ;; unique, e.g., there might be duplicate custom ID or
+                 ;; two headings with the same title in the file.
+                 ;;
+                 ;; As a consequence, before re-using any reference to
+                 ;; an element or object, we check that it doesn't refer
+                 ;; to a previous element or object.
+                 (new (or (cl-some
+                           (lambda (cell)
+                             (let ((stored (cdr (assoc cell crossrefs))))
+                               (when stored
+                                 (let ((old (org-export-format-reference stored)))
+                                   (and (not (assoc old cache)) stored)))))
+                           cells)
+                          (when (org-element-property :raw-value datum)
+                            ;; Heading with a title
+                            (unpackaged/org-export-new-title-reference datum cache))
+                          ;; NOTE: This probably breaks some Org Export
+                          ;; feature, but if it does what I need, fine.
+                          (org-export-format-reference
+                           (org-export-new-reference cache))))
+                 (reference-string new))
+            ;; Cache contains both data already associated to
+            ;; a reference and in-use internal references, so as to make
+            ;; unique references.
+            (dolist (cell cells) (push (cons cell new) cache))
+            ;; Retain a direct association between reference string and
+            ;; DATUM since (1) not every object or element can be given
+            ;; a search cell (2) it permits quick lookup.
+            (push (cons reference-string datum) cache)
+            (plist-put info :internal-references cache)
+            reference-string))))
+
+  (defun unpackaged/org-export-new-title-reference (datum cache)
+    "Return new reference for DATUM that is unique in CACHE."
+    (cl-macrolet ((inc-suffixf (place)
+                               `(progn
+                                  (string-match (rx bos
+                                                    (minimal-match (group (1+ anything)))
+                                                    (optional "--" (group (1+ digit)))
+                                                    eos)
+                                                ,place)
+                                  ;; HACK: `s1' instead of a gensym.
+                                  (-let* (((s1 suffix) (list (match-string 1 ,place)
+                                                             (match-string 2 ,place)))
+                                          (suffix (if suffix
+                                                      (string-to-number suffix)
+                                                    0)))
+                                    (setf ,place (format "%s--%s" s1 (cl-incf suffix)))))))
+      (let* ((title (org-element-property :raw-value datum))
+             (ref (url-hexify-string (substring-no-properties title)))
+             (parent (org-element-property :parent datum)))
+        (while (--any (equal ref (car it))
+                      cache)
+          ;; Title not unique: make it so.
+          (if parent
+              ;; Append ancestor title.
+              (setf title (concat (org-element-property :raw-value parent)
+                                  "--" title)
+                    ref (url-hexify-string (substring-no-properties title))
+                    parent (org-element-property :parent parent))
+            ;; No more ancestors: add and increment a number.
+            (inc-suffixf ref)))
+        ref)))
+  )
+
+
+(use-package ob-core
+  :straight org
+  ;; ob is org-babel, which lets org know about code and code blocks
+  :defer t
+  :custom
+  ;; I know what I'm getting myself into.
+  (org-confirm-babel-evaluate nil "Don't ask to confirm evaluation."))
+
+
+(use-package org-agenda
+  ;; Here's where I set which files are added to org-agenda, which controls
+  ;; org's global todo list, scheduling, and agenda features.  I use
+  ;; Syncthing to keep these files in sync across computers.
+  :straight org
+  :bind
+  (("C-c a" . org-agenda)
+   ("<f5>" . org-agenda)
+   :map org-agenda-mode-map
+   ;; overrides org-agenda-redo, which I use "g" for anyway
+   ("r" . org-agenda-refile)
+   ;; overrides saving all org buffers, also bound to C-x C-s
+   ("t" . org-agenda-schedule)
+   ("d" . my/org-agenda-mark-done)
+   ("n" . my/org-agenda-mark-next)
+   )
+
+  :init
+  ;; create org folder if doesn't exist
+  (defvar my-org-directory "~/Dropbox/org")
+  (unless (file-exists-p my-org-directory)
+    (make-directory my-org-directory))
+
+  (defvar my-org-todo (expand-file-name "todo.org" my-org-directory)
+    "Unstructure capture")
+  (defvar my-org-misc (expand-file-name "misc.org" my-org-directory)
+    "All other info for diary.")
+  (defvar my-org-note (expand-file-name "notes.org" my-org-directory)
+    "All other info for diary.")
+
+  ;;Include all files under these folder in org-agenda-files
+  (setq org-agenda-files `(,org-default-notes-file
+                           ,my-org-todo
+                           ,my-org-misc))
+  (setq org-agenda-text-search-extra-files `(,my-org-note))
+
+  :custom
+  (org-directory "~/Dropbox/org/" "Kept in sync with syncthing.")
+  (org-default-notes-file (concat org-directory "refile.org"))
+  (org-agenda-skip-deadline-if-done t "Remove done deadlines from agenda.")
+  (org-agenda-skip-scheduled-if-done t "Remove done scheduled from agenda.")
+  (org-agenda-skip-timestamp-if-done t "Don't show timestamped things in agenda if they're done.")
+  (org-agenda-skip-scheduled-if-deadline-is-shown 'not-today "Don't show scheduled if the deadline is visible unless it's also scheduled for today.")
+  (org-agenda-skip-deadline-prewarning-if-scheduled 'pre-scheduled "Skip deadline warnings if it is scheduled.")
+  (org-deadline-warning-days 3 "warn me 3 days before a deadline")
+  (org-agenda-tags-todo-honor-ignore-options t "Ignore scheduled items in tags todo searches.")
+  (org-agenda-tags-column 'auto)
+  (org-agenda-window-setup 'only-window "Use current window for agenda.")
+  (org-agenda-restore-windows-after-quit t "Restore previous config after I'm done.")
+  (org-agenda-span 'day) ; just show today. I can "vw" to view the week
+  (org-agenda-time-grid
+   '((daily today remove-match) (800 1000 1200 1400 1600 1800 2000)
+     "" "") "By default, the time grid has a lot of ugly '-----' lines. Remove those.")
+  (org-agenda-scheduled-leaders '("" "%2dx ") "I don't need to know that something is scheduled.  That's why it's appearing on the agenda in the first place.")
+  (org-agenda-block-separator ?- "Use nice unicode character instead of ugly = to separate agendas:")
+  (org-agenda-deadline-leaders '("Deadline: " "In %d days: " "OVERDUE %d day: ") "Make deadlines, especially overdue ones, stand out more:")
+  (org-agenda-current-time-string "? NOW ?")
+  ;; The agenda is ugly by default. It doesn't properly align items and it
+  ;; includes weird punctuation. Fix it:
+  (org-agenda-prefix-format '((agenda . "%-12c%-14t%s")
+                              (todo . " %i %-12:c")
+                              (tags . " %i %-12:c")
+                              (search . " %i %-12:c")))
+
+  ;; Custom agenda
+  (org-agenda-custom-commands
+   '(
+     ("h" "Home Agenda"
+      ((agenda "" nil)
+       (todo "NEXT"
+             ((org-agenda-max-entries 5)
+              (org-agenda-overriding-header "Dagens oppgaver:")
+              ))
+       (tags "@home"
+             ((org-agenda-overriding-header "Samlet oppgaver:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT")))))
+       (tags "REFILE"
+             ((org-agenda-overriding-header "Refile:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT"))))))
+      ((org-agenda-tag-filter-preset '("-@work"))))
+     ("w" "Work Agenda"
+      ((agenda "" nil)
+       (todo "NEXT"
+             ((org-agenda-max-entries 5)
+              (org-agenda-overriding-header "Dagens oppgaver:")
+              ))
+       (tags "@work"
+             ((org-agenda-overriding-header "Oppgavene som skal gjøres:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT")))))
+       (tags "REFILE"
+             ((org-agenda-overriding-header "Refile:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT"))))))
+      ((org-agenda-tag-filter-preset '("-@home"))))
+     ("d" "deadlines"
+      ((agenda ""
+               ((org-agenda-entry-types '(:deadline))
+                (org-agenda-span 'fortnight)
+                (org-agenda-time-grid nil)
+                (org-deadline-warning-days 0)
+                (org-agenda-skip-deadline-prewarning-if-scheduled nil)
+                (org-agenda-skip-deadline-if-done nil)))))
+     ("b" "bibliography"
+      ((tags "CATEGORY=\"bib\"+LEVEL=2"
+             ((org-agenda-overriding-header "")))))
+     ("u" "unscheduled"
+      ((todo  "TODO"
+              ((org-agenda-overriding-header "Unscheduled tasks")
+               (org-agenda-todo-ignore-with-date t)))))))
+
+  :config
+  (defun my/org-agenda-mark-done (&optional _arg)
+    "Mark current TODO as DONE.
+See `org-agenda-todo' for more details."
+    (interactive "P")
+    (org-agenda-todo "DONE"))
+
+  (defun my/org-agenda-mark-next (&optional _arg)
+    "Mark current TODO as NEXT.
+See `org-agenda-todo' for more details."
+    (interactive "P")
+    (org-agenda-todo "NEXT"))
+  )
+
+
+(use-package org-capture
+  :straight org
+  :bind*
+  ("C-c c" . org-capture)
+  :bind
+  ((:map org-capture-mode-map
+         ("C-c C-j" . my/org-capture-refile-and-jump))
+   (:map my-personal-map
+         ("p" . ybk/org-task-capture)))
+  ;; :init
+  ;; (setq org-default-notes-file (concat org-directory "refile.org"))
+  ;; (defconst my/org-inbox (concat org-directory "refile.org"))
+  ;; (defconst my/org-notes (concat org-directory "notes.org"))
+  :custom
+  (org-capture-templates
+   (quote (("a" "Avtale" entry (file+headline org-default-notes-file "Avtale")
+            "* %?\n\n%^T\n\n:PROPERTIES:\n\n:END:\n\n")
+           ("t" "task" entry (file  org-default-notes-file)
+            "* TODO \n:PROPERTIES:\n:CREATED: %U\n:END:\n%i")
+           ("m" "mail" entry (file org-default-notes-file)
+            "* TODO [#A] %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")
+           ("n" "note" entry (file my-org-note)
+            "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n %i")
+           )))
+  :config
+  (defun my/org-capture-refile-and-jump ()
+    (interactive)
+    (org-capture-refile)
+    (org-refile-goto-last-stored))
+
+  ;; Org-capture shortcut
+  (defun ybk/org-task-capture ()
+    "Capture a task with my default template."
+    (interactive)
+    (org-capture nil "t"))
+  )
+
+
+(use-package org-eww
+  ;; Org-eww lets me capture eww webpages with org-mode
+  :straight org
+  :straight eww
+  :after eww)
+
+(use-package org-indent
+  ;; org-indent-mode nicely aligns text with the outline level
+  :straight org
+  :hook
+  (org-mode . org-indent-mode))
+
+(use-package ox-gfm
+  ;; to export to markdown
+  ;; M-x org-gfm-export-to-markdown
+  :straight t
+  :after org
+  :bind (:map my-assist-map
+              ("d m" . org-gfm-export-to-markdown) ;export as file
+              ("d a" . org-gfm-export-as-markdown) ;export as buffer
+              )
+  :init
+  (eval-after-load "org"
+    '(require 'ox-gfm nil t))
+
+  :config
+  (which-key-add-key-based-replacements
+    "<f9> d" "org-exp-md")
+  )
+
 ;;; Appearance
 ;; (use-package naysayer-theme)
 ;; (load-theme 'naysayer t)
@@ -2594,7 +3233,9 @@ The icons may not be showed correctly in terminal and on Windows.")
   )
 
 
-;;;; Extra
+
+;;; Extra
+;;;; Straight related
 ;; https://www.manueluberti.eu/emacs/2019/11/02/thirty-straight-days/
 (defun mu-straight-pull-or-prune (&optional prune)
   "Update all available packages via `straight'.
@@ -2608,3 +3249,50 @@ With PRUNE, prune the build cache and the build directory."
       (straight-pull-all))))
 
 (bind-key* "<f7>" #'mu-straight-pull-or-prune)
+
+;;;; Calendar
+;; Manual setup
+(setq calendar-week-start-day 1
+      calendar-day-name-array ["Søndag" "Mandag" "Tirsdag" "Onsdag"
+                               "Torsdag" "Fredag" "Lørdag"]
+      calendar-month-name-array ["Januar" "Februar" "Mars" "April" "Mai"
+                                 "Juni" "Juli" "August" "September"
+                                 "Oktober" "November" "Desember"])
+
+(use-package calendar-norway
+  ;; :custom
+  ;; (calendar-holidays 'calendar-norway-raude-dagar "Include days where you don't have to work")
+  ;; (calendar-holidays 'calendar-norway-andre-merkedagar "Include other days that people celebrate")
+  ;; (calendar-holidays 'calendar-norway-dst "Daylight saving")
+  :config
+  ;; Set what holidays you want in your calendar:
+  (setq calendar-holidays
+        (append
+         ;; Include days where you don't have to work:
+         calendar-norway-raude-dagar
+         ;; Include other days that people celebrate:
+         calendar-norway-andre-merkedagar
+         ;; Include daylight savings time:
+         calendar-norway-dst
+         ;; And then you can add some non-Norwegian holidays etc. if you like:
+         '((holiday-fixed 3 17 "St. Patricksdag")
+           (holiday-fixed 10 31 "Hallowe'en")
+           (holiday-float 11 4 4 "Thanksgiving")
+           (solar-equinoxes-solstices))))
+  )
+
+;;;; Weather
+(use-package weather-metno
+  :straight t
+  :bind (:map my-personal-map
+              ("w" . weather-metno-forecast))
+  :config
+  (setq weather-metno-location-name "Oslo, Norge"
+        weather-metno-location-latitude 59
+        weather-metno-location-longitude 10)
+
+  ;; ;; change icon size
+  ;; (setq weather-metno-use-imagemagick t)
+  ;; (setq weather-metno-get-image-props '(:width 10 :height 10 :ascent center))
+  (setq weather-metno-get-image-props '(:ascent center))
+  )
