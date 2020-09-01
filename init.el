@@ -184,29 +184,32 @@
  ad-redefinition-action 'accept
  )
 
-(require 'cl)
-(use-package f :demand t) ;; files
-(use-package dash :demand t) ;; lists
-(use-package ht :demand t) ;; hash-tables
-(use-package s :demand t) ;; strings
-(use-package a :demand t) ;; association lists
-(use-package anaphora :demand t) ;; anaphora
-(use-package hydra)
-
-;;; Windows paths
+;;;; Windows paths
 (when (string-equal system-type "windows-nt") ())
 
+;;;; Encoding
+;; Encoding for all system
+;; https://stackoverflow.com/questions/2901541/which-coding-system-should-i-use-in-emacs/2903256#2903256
+;; Else use C-x RET f (set-buffer-file-coding-system) then save the file
+;; with selected encoding
+(setq utf-translate-cjk-mode nil) ; disable CJK coding/encoding (Chinese/Japanese/Korean characters)
+(set-language-environment 'utf-8)
+(set-keyboard-coding-system 'utf-8-mac) ; For old Carbon emacs on OS X only
+(setq locale-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-selection-coding-system
+ (if (eq system-type 'windows-nt)
+     'utf-16-le  ;; https://rufflewind.com/2014-07-20/pasting-unicode-in-emacs-on-windows
+   'utf-8))
+(prefer-coding-system 'utf-8)
 
 ;;; Misc
-;; Misc
 (set-frame-name "Emacs the Great")
+;; replaced active region by typing txt or DEL
 (delete-selection-mode 1)
 ;; enable y/n answers
 (fset 'yes-or-no-p 'y-or-n-p)
-;; Set paste system
-;; (set-clipboard-coding-system 'utf-16le-dos)
-;; Set paste error under linux
-(set-selection-coding-system 'utf-8)
 ;; Allow pasting selection outside of Emacs
 (setq x-select-enable-clipboard t)
 ;; Don't blink
@@ -231,7 +234,6 @@
 (use-package beacon
   ;; Highlight the cursor whenever it scrolls
   :straight t
-  :defer 5
   :bind (("C-<f12>" . beacon-blink)) ;; useful when multiple windows
   :config
   (setq beacon-size 10)
@@ -240,6 +242,16 @@
 ;; don't bind C-x C-z to suspend-frame:
 (unbind-key "C-x C-z")
 ;; if frame freeze then use xkill -frame $emacs
+
+;; (require 'cl) ;Old Common Lisp library eg. defstruct, incf etc
+(require 'cl-lib) ;;include Common Lisp compatibility eg. cl-defstruct, cl-incf etc
+(use-package f :demand t) ;; files
+(use-package dash :demand t) ;; lists
+(use-package ht :demand t) ;; hash-tables
+(use-package s :demand t) ;; strings
+(use-package a :demand t) ;; association lists
+(use-package anaphora :demand t) ;; anaphora for implicit temp variable of Emacs Lisp expressions
+(use-package hydra)
 
 (use-package which-key
   :defer 3
@@ -258,11 +270,8 @@
 
 (use-package whole-line-or-region
   ;; If no region is active, C-w and M-w will act on current line
-  :defer 5
-  ;; Right click to paste: I don't use the popup
-  ;; :bind ("<mouse-3>" . whole-line-or-region-
   :bind (:map whole-line-or-region-local-mode-map
-              ("C-w" . kill-region-or-backward-word)) ;; Reserve for backward-kill-word
+              ("<M-backspace>" . kill-region-or-backward-word)) ;; Reserve for backward-kill-word
   :init
   (defun kill-region-or-backward-word ()
     "Kill selected region if region is active. Otherwise kill a backward word."
@@ -1647,7 +1656,6 @@ Version 2017-09-01"
 
 ;;;; Auto-completion
 (use-package auto-complete
-  :defer 3
   :hook (inferior-ess-r-mode . auto-complete-mode)
   :bind (:map ac-complete-mode-map
               ("C-n" . ac-next)
@@ -1664,6 +1672,81 @@ Version 2017-09-01"
   (ac-candidate-limit 5 "Number of candidates to show")
   (ac-menu-height 5 "Height of candidate menu")
   )
+
+
+(use-package company
+  :straight company-quickhelp ; Show short documentation at point
+  :straight company-shell
+  ;; :bind* ("C-i" . company-complete) ;activate globally doesn't work in Swiper
+  :bind (
+         :map company-active-map
+         ("C-c ?" . company-quickhelp-manual-begin)
+         ;; Deactivate default M-n and M-h for convinence in inferior-R buffer
+         ("C-n" . company-select-next)
+         ("C-p" . company-select-previous)
+         ("C-d" . company-show-doc-buffer)
+         ("<tab>" . company-complete)
+         ("C-i" . company-complete-common)
+         :map my-search-map
+         ("c" . company-mode)
+         ("<tab>" . company-complete-selection)
+         )
+  :config
+  (global-company-mode t)
+
+  (setq company-show-numbers t
+        ;; invert the navigation direction if the the completion
+        ;; popup-isearch-match is displayed on top (happens near the bottom of
+        ;; windows)
+        company-tooltip-flip-when-above t)
+
+  ;; Directly press [1..9] to insert candidates
+  ;; See http://oremacs.com/2017/12/27/company-numbers/
+  (defun ora-company-number ()
+    "Forward to `company-complete-number'.
+Unless the number is potentially part of the candidate.
+In that case, insert the number."
+    (interactive)
+    (let* ((k (this-command-keys))
+           (re (concat "^" company-prefix k)))
+      (if (or (cl-find-if (lambda (s) (string-match re s))
+                          company-candidates)
+              (> (string-to-number k)
+                 (length company-candidates)))
+          (self-insert-command 1)
+        (company-complete-number
+         (if (equal k "0")
+             10
+           (string-to-number k))))))
+
+  (let ((map company-active-map))
+    (mapc (lambda (x) (define-key map (format "%d" x) 'ora-company-number))
+          (number-sequence 0 9))
+    (define-key map " " (lambda ()
+                          (interactive)
+                          (company-abort)
+                          (self-insert-command 1)))
+    (define-key map (kbd "<return>") nil))
+
+  ;; company-shell
+  (add-to-list 'company-backends 'company-shell)
+
+  ;; aktifkan di org-mode selepas pastikan company-capf di company-backends
+  ;; https://github.com/company-mode/company-mode/issues/50
+  (defun add-pcomplete-to-capf ()
+    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+  (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
+
+  (setq company-tooltip-align-annotations t   ; align
+        company-tooltip-limit 6               ; list to show
+        company-tooltip-flip-when-above t
+        company-show-numbers t                ; Easy navigation to candidates with M-<n>
+        company-idle-delay .2                 ; delay before autocomplete popup
+        company-minimum-prefix-length 4       ; 4 prefix sebelum tunjukkan cadangan (default)
+        company-abort-manual-when-too-short t ; tanpa company sekiranya prefix pendek dari 'minimum-prefix-length'
+        )
+  )
+
 
 
 ;;;; Heuristic text completion: hippie expand + dabbrev
@@ -3308,3 +3391,4 @@ With PRUNE, prune the build cache and the build directory."
   ;; (setq weather-metno-get-image-props '(:width 10 :height 10 :ascent center))
   (setq weather-metno-get-image-props '(:ascent center))
   )
+
