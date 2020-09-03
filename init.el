@@ -330,8 +330,9 @@
   (default-text-scale-mode))
 
 
-;;; Commenting
+;;; General for programming
 (defun comment-eclipse ()
+  "For commenting code."
   (interactive)
   (let ((start (line-beginning-position))
         (end (line-end-position)))
@@ -347,8 +348,6 @@
     (comment-or-uncomment-region start end)))
 
 (global-set-key (kbd "M-'") 'comment-eclipse)
-
-
 
 (use-package crux
   ;; A handful of useful functions
@@ -381,6 +380,16 @@
   (add-to-list 'crux-indent-sensitive-modes 'markdown-mode)
   )
 
+(use-package page-scrolling
+  ;; http://pragmaticemacs.com/emacs/scrolling-and-moving-by-line/
+  :straight nil
+  :init
+  ;; preserve cursor position when scrolling
+  (setq scroll-preserve-screen-position 1)
+  ;; scrool windows up/down by 3 lines
+  (global-set-key (kbd "C-<prior>") (kbd "C-u 3 M-v"))
+  (global-set-key (kbd "C-<next>") (kbd "C-u 3 C-v"))
+  )
 
 
 (use-package simple
