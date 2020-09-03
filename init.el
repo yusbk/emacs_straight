@@ -124,7 +124,8 @@
   (load custom-file :noerror))
 
 ;;; General setup
-(setq-default ;; Use setq-default to define global default
+;; Use setq-default to define global default
+(setq-default 
  ;; Don't show scratch message, and use fundamental-mode for *scratch*
  ;; Remove splash screen and the echo area message
  inhibit-startup-message t
@@ -533,7 +534,7 @@ Version 2019-11-24"
   ;;to combine iedit with mc can use idedit-switch-to-mc-mode
   ;;use C-; to start and end iedit
   :straight t
-  :bind ("C-;" . iedit-mode)
+  :bind ("C-:" . iedit-mode)
   )
 
 
@@ -3246,6 +3247,65 @@ See `org-agenda-todo' for more details."
     "<f9> d" "org-exp-md")
   )
 
+;;; Spellcheck
+;; This setting specifically for Windows
+;; https://www.reddit.com/r/emacs/comments/8by3az/how_to_set_up_sell_check_for_emacs_in_windows/
+;; general guide for downloading hundspell http://www.nextpoint.se/?p=656
+;; Dictionary https://github.com/LibreOffice/dictionaries
+(use-package flyspell
+  :init
+  (setenv "DICTPATH" "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\share\\hunspell")
+  ;; (setenv "DICTIONARY"  "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\share\\hunspell\\en_GB")
+  :custom
+  (ispell-program-name "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\bin\\hunspell.exe")
+  (ispell-extra-args '("-p" ,(expand-file-name "hunspell" my-emacs-cache)) "Save dict common location")
+  :hook ((text-mode markdown-mode) . flyspell-mode)
+  :hook ((prog-mode
+          ess-mode
+          ado-mode
+          emacs-lisp-mode) . flyspell-prog-mode) ;check only for comments
+  :bind (:map my-assist-map
+              ("L n" . lang-norsk)
+              ("L e" . lang-eng))
+  :config
+  (setq ispell-extra-args '("--sug-mude=ultra" ;normal|fast|ultra for speed
+                            "--lang=en_GB"))
+  
+  (which-key-add-key-based-replacements
+    "<f9> L" "change lang")
+  
+  (defun lang-norsk ()
+    "Change to Norwegian."
+    (interactive)
+    (ispell-change-dictionary "nb_NO")
+    (flyspell-buffer))
+
+  (defun lang-eng ()
+    "Change to English."
+    (interactive)
+    (ispell-change-dictionary "nb_GB")
+    (flyspell-buffer))
+
+  (add-to-list 'ispell-skip-region-alist '("^#+BEGIN_SRC" . "^#+END_SRC"))
+  )
+
+(use-package flyspell-correct
+  ;; https://github.com/d12frosted/flyspell-correct
+  :after flyspell
+  :bind (
+         :map flyspell-mode-map
+         ("C-;" . flyspell-correct-wrapper)
+         :map my-assist-map
+         ("L-<left>" . flyspell-correct-previous)
+         ("L-<right>" . flyspell-correct-next)
+         ("L-<return>" . flyspell-corrent-at-point )))
+
+(use-package flyspell-correct-ivy
+  :after flyspell-correct)
+;; How to ignore some words if flyspell can read here
+;; https://stackoverflow.com/questions/4671908/how-to-make-flyspell-bypass-some-words-by-context
+
+
 ;;; Appearance
 ;; (use-package naysayer-theme)
 ;; (load-theme 'naysayer t)
@@ -3374,9 +3434,12 @@ See `org-agenda-todo' for more details."
   :straight t
   :custom
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
-  (doom-modeline-icon t)
+  (doom-modeline-icon (display-graphic-p))
   (doom-modeline-major-mode-icon t)
+  (doom-modeline-major-mode-color-icon t "Display the colorful icon for major-mode")
   (doom-modeline-minor-modes nil)
+  (doom-modeline-buffer-modification-icon t)
+  (doom-modeline-project-detection 'project)
   (inhibit-compacting-font-caches t "Don't compact font caches during GC in windows")
   :hook
   (after-init . doom-modeline-mode)
