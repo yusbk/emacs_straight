@@ -1627,7 +1627,13 @@ Version 2017-09-01"
               ("x v" . find-variable)
               ("x l" . find-library))
   :hook
-  (find-function-after . reposition-window))
+  (find-function-after . reposition-window)
+  :config
+  
+  ;; Rename for find-function
+  (which-key-add-key-based-replacements
+    "C-s x" "find-xxx")
+  )
 
 
 (use-package aggressive-indent
@@ -1691,14 +1697,16 @@ Version 2017-09-01"
          ("c" . company-mode)
          ("<tab>" . company-complete-selection)
          )
+  :custom
+  (company--show-numbers nil "Show number not optimal when writing R code")
+  (company-tooltip-flip-when-above t "Invert navigation when at the bottom windows")
+  (company-tooltip-align-annotations t "Align")
+  (company-tooltip-limit 6 "List to show")
+  (company-idle-delay .2 "Delay before autocomplete popup")
+  (company-minimum-prefix-length 4 "Number of prefix before popup")
+  (company-abort-manual-when-too-short t "No autocomplete if below minimum prefix")
   :config
   (global-company-mode t)
-
-  (setq company-show-numbers t
-        ;; invert the navigation direction if the the completion
-        ;; popup-isearch-match is displayed on top (happens near the bottom of
-        ;; windows)
-        company-tooltip-flip-when-above t)
 
   ;; Directly press [1..9] to insert candidates
   ;; See http://oremacs.com/2017/12/27/company-numbers/
@@ -1737,14 +1745,7 @@ In that case, insert the number."
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
   (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
 
-  (setq company-tooltip-align-annotations t   ; align
-        company-tooltip-limit 6               ; list to show
-        company-tooltip-flip-when-above t
-        company-show-numbers t                ; Easy navigation to candidates with M-<n>
-        company-idle-delay .2                 ; delay before autocomplete popup
-        company-minimum-prefix-length 4       ; 4 prefix sebelum tunjukkan cadangan (default)
-        company-abort-manual-when-too-short t ; tanpa company sekiranya prefix pendek dari 'minimum-prefix-length'
-        )
+
   )
 
 
@@ -2028,7 +2029,7 @@ showing them."
     )
   :config
   (progn
-    (setq neo-theme 'ascii) ; 'classic, 'nerd, 'ascii, 'arrow
+    (setq neo-theme 'classic) ; 'classic, 'nerd, 'ascii, 'arrow
 
     (setq neo-vc-integration '(face char))
 
@@ -2146,6 +2147,7 @@ showing them."
   ;; (setq company-global-modes '(not inferior-ess-mode))
   )
 
+;;;; R
 (use-package ess-r-mode
   :straight ess
   ;; :mode ("\\.r[R]\\'" . ess-r-mode)
@@ -2425,8 +2427,48 @@ if there is displayed buffer that have shell it will use that window"
       ))
   )
 
+;;;; Stata
+;; specify PATH guide https://emacs.stackexchange.com/questions/27326/gui-emacs-sets-the-exec-path-only-from-windows-environment-variable-but-not-from
+(use-package ess-stata-mode
+  ;; This has been taken out from ESS https://github.com/emacs-ess/ESS/issues/1033
+  :disabled
+  :straight ess
+  :mode (("\\.do" . stata-mode)
+         ("\\.ado" . stata-mode))
+  :init
+  ;; (add-to-list 'exec-path "C:/Program Files/Stata16")
+  ;; (setenv "PATH" (mapconcat #'identity exec-path path-separator))
+  (if (eq system-type 'windows-nt)
+      (progn
+        (add-to-list 'exec-path "C:/Program Files/Stata16")
+        (setenv "PATH" (mapconcat #'identity exec-path path-separator))
+        ))
+  )
 
-
+;; Ado-mode consiste script (send2stata.exe) and template dir which is not in lisp that need
+;; to be specified. Therefore using straight will give errors since straight does
+;; not include those directories. Else clone repos from github.
+;; Open Stata and M-RET to run code ie. send2stata
+(use-package ado-mode
+  ;; https://github.com/louabill/ado-mode
+  ;; :straight (ado-mode :type git :host github :repo "louabill/ado-mode")
+  :straight nil
+  :load-path "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/lisp"
+  :mode (("\\.do" . ado-mode)
+         ("\\.ado" . ado-mode))
+  ;; :hook (ado-mode . company-mode)
+  :hook (ado-mode . auto-complete-mode)
+  :hook (ado-mode . rainbow-delimiters-mode)
+  :hook (ado-mode . smartparens-mode)
+  :hook (ado-mode . smartparens-strict-mode)
+  :custom
+  ;; (ado-script-dir "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/scripts")
+  (ado-mode-home "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/")
+  (ado-script-dir
+   "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/scripts")
+  (ado-site-template-dir
+   "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/templates/")
+  )
 
 ;;; Markdown
 ;; Code highlighting via polymode
@@ -2564,7 +2606,7 @@ if there is displayed buffer that have shell it will use that window"
   (org-startup-with-inline-images t "Show inline images.")
   (org-log-done 'time)
   (org-goto-interface 'outline-path-completion)
-  (org-ellipsis "?")
+  (org-ellipsis "..►") ;; symbol for hiding content 
   ;; tags within start-endgroup will allow only one of those in a file
   ;; C-c C-q for setting tags
   (org-tag-persistent-alist '(("annent" . ?a)
@@ -2623,7 +2665,7 @@ if there is displayed buffer that have shell it will use that window"
     ;; Whether the symbol actually gets prettified is controlled by
     ;; `org-pretty-compose-p', which see.
     (setq-local prettify-symbols-unprettify-at-point nil)
-    (setq-local prettify-symbols-alist '(("*" . ?*)))
+    (setq-local prettify-symbols-alist '(("*" . ?●)))
     (setq-local prettify-symbols-compose-predicate #'my/org-pretty-compose-p))
 
   (defun my/org-next-visible-heading (arg)
@@ -2683,6 +2725,46 @@ match.  See also `prettify-symbols-compose-predicate'."
   (bind-key "C-c s" #'my-org-insert-src-block org-mode-map)
 
 
+  ;; ;; ---- for ESS souce block start ----
+  ;; ;; This will use defined :dir in properties as the working directory
+  ;; ;; https://emacs.stackexchange.com/questions/57907/set-ess-working-directory-from-header-args-with-org-babel-sessions
+  ;; ;; Get :dir
+  ;; (defun org-header-arg (p)
+  ;;   (setq args (org-babel-get-src-block-info))
+  ;;   (assoc-default p (nth 2 args)))
+
+  ;; ;; Get language of source block
+  ;; (defun get-src-language ()
+  ;;   (setq args (org-babel-get-src-block-info))
+  ;;   (nth 0 args))
+
+  ;; ;; Send message to R process
+  ;; (defun send-msg-r (w)
+  ;;   (ess-send-string 
+  ;;    (get-process "R")
+  ;;    (format "setwd(\"%s\")" w)))
+
+  ;; ;; If point is in an R code block then if R is running: setwd()
+  ;; ;; Else if R is not running, run R and setwd().  
+  ;; (defun setwd-dir ()
+  ;;   (if (string= (get-src-language) "R")
+  ;;       (if (eq (get-process "R") nil)
+  ;;           (progn 
+  ;;             (setq w (org-header-arg :dir)) ;; Capture before R redirects
+  ;;             (defadvice R (after set-working-dir-R activate) (send-msg-r w))
+  ;;             (save-excursion (R)))
+  ;;         (send-msg-r (org-header-arg :dir)))))
+
+  ;; ;; Advise org-edit-special
+  ;; (defadvice org-edit-special (before set-working-dir activate)
+  ;;   (setwd-dir))
+
+  ;; ;; Advise org-babel-execute-src-block
+  ;; (defadvice org-babel-execute-src-block (before set-working-dir-b activate) 
+  ;;   (setwd-dir))
+  ;; ;;-------- ESS end -------
+  
+  
   ;; surround command https://github.com/alphapapa/unpackaged.el#surround-region-with-emphasis-or-syntax-characters
   ;; block the text and use the surround selected KEY
   ;;###autoload
@@ -3221,9 +3303,9 @@ See `org-agenda-todo' for more details."
 (defface egoge-display-time
   '((((type x w32 mac))
      ;; #006655 is the background colour of my default face.
-     (:foreground "#0be" :inherit bold))
+     (:foreground "green" :inherit bold)) ;#0be
     (((type tty))
-     (:foreground "blue")))
+     (:foreground "dark red")))
   "Face used to display the time in the mode line.")
 
 
@@ -3280,13 +3362,20 @@ See `org-agenda-todo' for more details."
                ))
 
 
+(use-package all-the-icons
+  :config
+  (all-the-icons-octicon "file-binary")  ;; GitHub Octicon for Binary File
+  (all-the-icons-faicon  "cogs")         ;; FontAwesome icon for cogs
+  (all-the-icons-wicon   "tornado")      ;; Weather Icon for tornado
+  )
+
 (use-package doom-modeline
   ;; Run M-x all-the-icons-install-fonts to install all-the-icons
   :straight t
   :custom
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
   (doom-modeline-icon t)
-  (doom-modeline-major-mode-icon nil)
+  (doom-modeline-major-mode-icon t)
   (doom-modeline-minor-modes nil)
   (inhibit-compacting-font-caches t "Don't compact font caches during GC in windows")
   :hook
@@ -3312,8 +3401,9 @@ The icons may not be showed correctly in terminal and on Windows.")
                       :box '(:line-width 6 :color "#565063")
                       :overline nil
                       :underline nil)
-
   )
+
+
 
 ;; Show hexadecimal color in the background they represent
 (use-package rainbow-mode
