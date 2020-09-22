@@ -101,7 +101,7 @@
   :bind (:map my-personal-map
               ("y" . my-init-file)
               ("0" . save-buffers-kill-emacs)
-              ("Q" . delete-frame) ;C-x 5 0
+              ("9" . delete-frame) ;C-x 5 0
               ("<delete>" . kill-emacs)
               )
   :init
@@ -255,18 +255,18 @@
 (use-package hydra)
 
 (use-package which-key
-  :defer 3
   :custom
-  (which-key-show-early-on-C-h t "Allow C-h to trigger which-key b4 it's done automatically")
-  (which-key-idle-delay 10000)
+  ;; (which-key-show-early-on-C-h t "Allow C-h to trigger which-key b4 it's done automatically")
+  (which-key-idle-delay 1.0)
   (which-key-idle-secondary-delay 0.05)
+  (which-key-popup-type 'minibuffer)
   :config
   ;; (setq which-key-idle-delay 1.0)
   (which-key-mode)
 
   ;; Rename for resize-buffer menu
   (which-key-add-key-based-replacements
-    "<f12> v" "resize buffer")
+    "C-c w" "eyebrowse")
   )
 
 (use-package whole-line-or-region
@@ -368,7 +368,8 @@
                ;; ("t" . crux-transpose-windows)
                )
          (:map my-personal-map
-               ("<return>" . crux-cleanup-buffer-or-region))
+               ("<return>" . crux-cleanup-buffer-or-region)
+               ("K" . crux-kill-other-buffers))
          )
   :init
   (global-set-key [remap move-beginning-of-line] #'crux-move-beginning-of-line)
@@ -399,9 +400,6 @@
   :hook ((prog-mode) . auto-fill-mode)
   ;; resize buffer accordingly
   :bind
-  ;; binding changed named with which-key
-  ("<f12> v" . (lambda () (interactive) (progn (visual-line-mode)
-                                          (follow-mode))))
   ;; M-backspace to backward-delete-word
   ;; C-S-backspace is used by sp-kill-whole-line
   ("M-S-<backspace>" . backward-kill-sentence)
@@ -672,7 +670,7 @@ Version 2019-11-24"
 (use-package counsel
   ;; specifying counsel will bring ivy and swiper as dependencies
   :demand t
-  :straight ivy-hydra
+  :straight ivy-hydra ;activated with C-o in ivy-minor-mode
   :straight ivy-rich
   :straight counsel-projectile
   :straight ivy-posframe
@@ -1037,13 +1035,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; source https://oremacs.com/2015/01/17/setting-up-ediff/
   :straight nil
   :bind (:map my-assist-map
-              ("E" . ediff))
+              ("E" . ediff)
+              ("B" . diff-buffer-with-file) ;view changes in the buffer to file
+              ("C" . ediff-current-file) ;for interactive ediff buffer and file
+              )
   :custom
   (ediff-diff-options "-w" "ignore whitespace")
   ;; (ediff-window-setup-function 'ediff-setup-windows-plain "Don't use separate frame for control panel")
   (ediff-split-window-function 'split-window-horizontally)
   :config
-  
   ;; Bagi key bindings
   (defun ora-ediff-hook ()
     (ediff-setup-keymap)
@@ -1059,6 +1059,74 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 
 ;;; Window and Buffer management
+(use-package resize-window
+  :straight nil
+  :init
+  (defun win-resize-top-or-bot ()
+    "Figure out if the current window is on top, bottom or in the
+  middle"
+    (let* ((win-edges (window-edges))
+           (this-window-y-min (nth 1 win-edges))
+           (this-window-y-max (nth 3 win-edges))
+           (fr-height (frame-height)))
+      (cond
+       ((eq 0 this-window-y-min) "top")
+       ((eq (- fr-height 1) this-window-y-max) "bot")
+       (t "mid"))))
+
+  (defun win-resize-left-or-right ()
+    "Figure out if the current window is to the left, right or in the
+  middle"
+    (let* ((win-edges (window-edges))
+           (this-window-x-min (nth 0 win-edges))
+           (this-window-x-max (nth 2 win-edges))
+           (fr-width (frame-width)))
+      (cond
+       ((eq 0 this-window-x-min) "left")
+       ((eq (+ fr-width 4) this-window-x-max) "right")
+       (t "mid"))))
+
+  (defun win-resize-enlarge-horiz ()
+    (interactive)
+    (cond
+     ((equal "top" (win-resize-top-or-bot)) (enlarge-window -1))
+     ((equal "bot" (win-resize-top-or-bot)) (enlarge-window 1))
+     ((equal "mid" (win-resize-top-or-bot)) (enlarge-window -1))
+     (t (message "nil"))))
+
+  (defun win-resize-minimize-horiz ()
+    (interactive)
+    (cond
+     ((equal "top" (win-resize-top-or-bot)) (enlarge-window 1))
+     ((equal "bot" (win-resize-top-or-bot)) (enlarge-window -1))
+     ((equal "mid" (win-resize-top-or-bot)) (enlarge-window 1))
+     (t (message "nil"))))
+
+  (defun win-resize-enlarge-vert ()
+    (interactive)
+    (cond
+     ((equal "left" (win-resize-left-or-right)) (enlarge-window-horizontally -1))
+     ((equal "right" (win-resize-left-or-right)) (enlarge-window-horizontally 1))
+     ((equal "mid" (win-resize-left-or-right)) (enlarge-window-horizontally -1))))
+
+  (defun win-resize-minimize-vert ()
+    (interactive)
+    (cond
+     ((equal "left" (win-resize-left-or-right)) (enlarge-window-horizontally 1))
+     ((equal "right" (win-resize-left-or-right)) (enlarge-window-horizontally -1))
+     ((equal "mid" (win-resize-left-or-right)) (enlarge-window-horizontally 1))))
+
+  (global-set-key [C-S-down] 'win-resize-minimize-vert)
+  (global-set-key [C-S-up] 'win-resize-enlarge-vert)
+  (global-set-key [C-S-left] 'win-resize-minimize-horiz)
+  (global-set-key [C-S-right] 'win-resize-enlarge-horiz)
+  (global-set-key [C-S-up] 'win-resize-enlarge-horiz)
+  (global-set-key [C-S-down] 'win-resize-minimize-horiz)
+  (global-set-key [C-S-left] 'win-resize-enlarge-vert)
+  (global-set-key [C-S-right] 'win-resize-minimize-vert)
+  )
+
+
 (use-package windmove
   :straight nil
   :bind (
@@ -1072,8 +1140,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
          ("C-x <right>" . windmove-right)
          )
   )
-
-
 
 (use-package window
   ;; Handier movement over default window.el
@@ -1183,10 +1249,11 @@ horizontal mode."
   ;; Resize windows with ratio https://github.com/roman/golden-ratio.el
   :straight t
   :bind* (:map my-personal-map
-               ("V" . golden-ratio-mode))
+               ("V" . golden-ratio-mode)
+               ("v" . golden-ratio))
   :diminish golden-ratio-mode
   :init
-  (golden-ratio-mode 1)
+  ;; (golden-ratio-mode 1)
   (setq golden-ratio-auto-scale t))
 
 
@@ -1378,6 +1445,17 @@ Version 2017-09-01"
   :bind (:map projectile-command-map
               ("f" . projectile-find-file)
               ("p" . counsel-switch-project))
+  :init
+  ;; catch projects
+  (setq projectile-enable-caching t)
+  ;; for ignoring by file .projectile
+  (setq projectile-indexing-method 'native)
+  ;; reorder
+  (setq projectile-project-root-files #'( ".projectile"))
+  (setq projectile-project-root-files-functions  #'(projectile-root-top-down
+                                                    projectile-root-top-down-recurring
+                                                    projectile-root-bottom-up
+                                                    projectile-root-local))
   :config
   (which-key-add-key-based-replacements
     "C-c p" "projectile-map"
@@ -1394,9 +1472,6 @@ Version 2017-09-01"
 
   ;; Don't consider my home dir as a project
   (add-to-list 'projectile-ignored-projects `,(concat (getenv "HOME") "/"))
-
-  ;; catch projects
-  (setq projectile-enable-caching t)
 
   
   ;; Different than projectile-switch-project coz this works globally
@@ -1509,10 +1584,10 @@ Version 2017-09-01"
          ("M-{"           . sp-wrap-curly)
          ("M-<backspace>" . sp-backward-unwrap-sexp) ;unwrap outside exp2 when in exp3
          ("M-<del>"       . sp-unwrap-sexp) ;unwrap exp3 when in exp3
-         ("C-S-<right>"     . sp-forward-slurp-sexp) ;include exp4 when in exp3
-         ("C-S-<left>"      . sp-backward-slurp-sexp) ;include exp1 when in exp2
-         ("C-M-<right>"   . sp-forward-barf-sexp) ;remove exp4 from ()
-         ("C-M-<left>"    . sp-backward-barf-sexp) ;remove exp2 from ()
+         ;; ("C-S-<right>"     . sp-forward-slurp-sexp) ;include exp4 when in exp3
+         ;; ("C-S-<left>"      . sp-backward-slurp-sexp) ;include exp1 when in exp2
+         ;; ("C-M-<right>"   . sp-forward-barf-sexp) ;remove exp4 from ()
+         ;; ("C-M-<left>"    . sp-backward-barf-sexp) ;remove exp2 from ()
          ("C-M-a"         . sp-beginning-of-sexp)
          ("C-M-z"         . sp-end-of-sexp)
          ("C-M-k"         . sp-kill-sexp)
@@ -1904,7 +1979,7 @@ In that case, insert the number."
     :defines eshell-highlight-prompt
     :commands (epe-theme-lambda epe-theme-dakrone epe-theme-pipeline)
     :init (setq eshell-highlight-prompt nil
-                eshell-prompt-function 'epe-theme-lambda))
+                eshell-prompt-function 'epe-theme-dakrone))
 
   (use-package esh-autosuggest
     ;; Fish-like history autosuggestions https://github.com/dieggsy/esh-autosuggest
@@ -1978,7 +2053,7 @@ In that case, insert the number."
   :bind (("C-c TAB" . hs-toggle-hiding)
          ;; ("C-c h" . hs-toggle-hiding)
          ("M-+" . hs-show-all)
-         :map my-assist-map
+         :map my-prog-map
          ("-" . hs-toggle-hiding)
          ("+" . hs-show-all)
          )
@@ -2028,8 +2103,27 @@ showing them."
 (use-package neotree
   :straight t
   :defer 3
-  :bind ("<f4>" . neotree-toggle)
+  :bind (:map my-neotree-map
+              ("<f4>"       . neotree-toggle)
+              ("<prior>"    . ybk/neotree-go-up-dir)
+              ("+"          . ybk/find-file-next-in-dir)
+              ("-"          . ybk/find-file-prev-in-dir)
+              ("<C-return>" . neotree-change-root)
+              ("C"          . neotree-change-root)
+              ("c"          . neotree-create-node)
+              ("+"          . neotree-create-node)
+              ("d"          . neotree-delete-node)
+              ("r"          . neotree-rename-node)
+              ("h"          . neotree-hidden-file-toggle)
+              ("g"          . neotree-refresh)
+              ("A"          . neotree-stretch-toggle)
+              )
+  
   :init
+  (unbind-key [f4])
+  (bind-keys :prefix [f4]
+             :prefix-map my-neotree-map)
+
   (progn
     (setq-default neo-smart-open t) ;  every time when the neotree window is
                                         ;  opened, it will try to find current
@@ -2038,11 +2132,25 @@ showing them."
                                         ; window
     )
   :config
+  ;; (setq neo-theme 'classic) ; 'classic, 'nerd, 'ascii, 'arrow
+  ;;use icon for window and arrow for terminal
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow))
+
+  ;; https://emacs.stackexchange.com/questions/37678/neotree-window-not-resizable
+  (setq neo-window-fixed-size nil)
+  ;; Set the neo-window-width to the current width of the
+  ;; neotree window, to trick neotree into resetting the
+  ;; width back to the actual window width.
+  ;; Fixes: https://github.com/jaypei/emacs-neotree/issues/262
+  (eval-after-load "neotree"
+    '(add-to-list 'window-size-change-functions
+                  (lambda (frame)
+                    (let ((neo-window (neo-global--get-window)))
+                      (unless (null neo-window)
+                        (setq neo-window-width (window-width neo-window)))))))
+
   (progn
-    (setq neo-theme 'classic) ; 'classic, 'nerd, 'ascii, 'arrow
-
     (setq neo-vc-integration '(face char))
-
     ;; Patch to fix vc integration
     (defun neo-vc-for-node (node)
       (let* ((backend (vc-backend node))
@@ -2102,19 +2210,20 @@ showing them."
       (interactive)
       (ybk/find-file-next-in-dir :prev))
 
-    (bind-keys
-     :map neotree-mode-map
-     ("^"          . ybk/neotree-go-up-dir)
-     ("C-c +"      . ybk/find-file-next-in-dir)
-     ("C-c -"      . ybk/find-file-prev-in-dir)
-     ("<C-return>" . neotree-change-root)
-     ("C"          . neotree-change-root)
-     ("c"          . neotree-create-node)
-     ("+"          . neotree-create-node)
-     ("d"          . neotree-delete-node)
-     ("r"          . neotree-rename-node)
-     ("h"          . neotree-hidden-file-toggle)
-     ("f"          . neotree-refresh)))
+    ;; (bind-keys
+    ;;  :map neotree-mode-map
+    ;;  ("<prior>"          . ybk/neotree-go-up-dir)
+    ;;  ("C-c +"      . ybk/find-file-next-in-dir)
+    ;;  ("C-c -"      . ybk/find-file-prev-in-dir)
+    ;;  ("<C-return>" . neotree-change-root)
+    ;;  ("C"          . neotree-change-root)
+    ;;  ("c"          . neotree-create-node)
+    ;;  ("+"          . neotree-create-node)
+    ;;  ("d"          . neotree-delete-node)
+    ;;  ("r"          . neotree-rename-node)
+    ;;  ("h"          . neotree-hidden-file-toggle)
+    ;;  ("g"          . neotree-refresh))
+    )
   )
 
 
@@ -2123,7 +2232,7 @@ showing them."
   ;; https://github.com/fourier/ztree
   :straight t
   :bind (
-         :map my-personal-map
+         :map my-neotree-map
          ("z" . ztree-dir)
          ("Z" . ztree-diff)
          )
@@ -2146,7 +2255,7 @@ showing them."
                ;; Usually I bind C-z to `undo', but I don't really use `undo' in
                ;; inferior buffers. Use it to switch to the R script (like C-c
                ;; C-z):
-               ("C-z" . ess-switch-to-inferior-or-script-buffer)))
+               ([S-return] . ess-switch-to-inferior-or-script-buffer)))
   :config
   (defun ess-company-stop-hook ()
     "Disabled company in inferior ess."
@@ -2192,7 +2301,7 @@ showing them."
          )
 
   :custom
-  (inferior-R-program-name "c:/Program Files/R/R-4.0.2/bin/R.exe")
+  ;; (inferior-R-program-name "c:/Program Files/R/R-4.0.2/bin/R.exe")
   (ess-plain-first-buffername nil "Name first R process R:1")
   (ess-tab-complete-in-script t "TAB should complete.")
   (ess-style 'RStudio)
@@ -2561,6 +2670,23 @@ if there is displayed buffer that have shell it will use that window"
 
 
 
+;;; Latex
+;;pdf-tools is better but difficult to get it in Windows
+(use-package doc-view
+  :defer t
+  :custom
+  ;; Use MikTeX's utilities for PDF conversion and searching
+  (doc-view-ghostscript-program "mgs.exe")
+  (doc-view-pdf->png-converter-function 'doc-view-pdf->png-converter-ghostscript)
+  (doc-view-pdftotext-program "miktex-pdftotext.exe")
+  ;; MikTeX's utilities also for vieweing DVI files
+  (doc-view-dvipdfm-program "dvipdfm.exe")
+  ;; I install Libreoffice using Scoop as a portable, standalone
+  ;; executable. This is the location of the utility within there.
+  (doc-view-odf->pdf-converter-program "~/scoop/apps/libreoffice-stable/current/App/libreoffice/program/soffice.exe")
+  (doc-view-odf->pdf-converter-function 'doc-view-odf->pdf-converter-soffice)
+  )
+
 ;;; Org
 (use-package org
   ;; Org mode is a great thing. I use it for writing academic papers,
@@ -2653,7 +2779,7 @@ if there is displayed buffer that have shell it will use that window"
     (not (member (nth 2 (org-heading-components)) org-done-keywords)))
 
   (setq org-refile-target-verify-function 'ybk/verify-refile-target)
-
+  
 
   ;; These are the programming languages org should teach itself:
   (org-babel-do-load-languages
@@ -3069,6 +3195,7 @@ made unique when necessary."
   :init
   ;; create org folder if doesn't exist
   (defvar my-org-directory "~/Dropbox/org")
+  ;;(defvar my-org-directory "C:/Users/ybka/OneDrive - Folkehelseinstituttet/Dropbox/org")
   (unless (file-exists-p my-org-directory)
     (make-directory my-org-directory))
 
@@ -3094,6 +3221,7 @@ made unique when necessary."
 
   :custom
   (org-directory "~/Dropbox/org/" "Kept in sync with syncthing.")
+  ;; (org-directory "C:/Users/ybka/OneDrive - Folkehelseinstituttet/Dropbox/org/" "Kept in sync with sync thing")
   (org-default-notes-file (concat org-directory "refile.org"))
   (org-agenda-skip-deadline-if-done t "Remove done deadlines from agenda.")
   (org-agenda-skip-scheduled-if-done t "Remove done scheduled from agenda.")
@@ -3225,6 +3353,46 @@ See `org-agenda-todo' for more details."
     (org-capture nil "t"))
   )
 
+;; Perhaps should define org-export-define-backend 
+(use-package ox-pandoc
+  ;; export with pandoc
+  :after org
+  :config
+  ;; default options for all output formats
+  (setq org-pandoc-options '((standalone . t)))
+  )
+
+(use-package ox-hugo
+  ;; Use Hugo to build site https://ox-hugo.scripter.co/
+  :after ox
+  :config
+  ;; Populates only the EXPORT_FILE_NAME property in the inserted headline.
+  (with-eval-after-load 'org-capture
+    (defun org-hugo-new-subtree-post-capture-template ()
+      "Returns `org-capture' template string for new Hugo post.
+See `org-capture-templates' for more information."
+      (let* ((title (read-from-minibuffer "Post Title: ")) ;Prompt to enter the post title
+             (fname (org-hugo-slug title)))
+        (mapconcat #'identity
+                   `(
+                     ,(concat "* TODO " title)
+                     ":PROPERTIES:"
+                     ,(concat ":EXPORT_FILE_NAME: " fname)
+                     ":END:"
+                     "%?\n")          ;Place the cursor here finally
+                   "\n")))
+
+    (add-to-list 'org-capture-templates
+                 '("h"                ;`org-capture' binding + h
+                   "Hugo post"
+                   entry
+                   ;; It is assumed that below file is present in `org-directory'
+                   ;; and that it has a "Blog Ideas" heading. It can even be a
+                   ;; symlink pointing to the actual location of all-posts.org!
+                   (file+olp "all-posts.org" "Blog Ideas")
+                   (function org-hugo-new-subtree-post-capture-template))))
+  )
+
 
 (use-package org-eww
   ;; Org-eww lets me capture eww webpages with org-mode
@@ -3256,17 +3424,29 @@ See `org-agenda-todo' for more details."
     "<f9> d" "org-exp-md")
   )
 
+;;; JSON
+(use-package json-mode
+  :mode ("\\.json"))
+
+;; M-x json-navigator-navigate-after-point
+(use-package json-navigator)
+
 ;;; Spellcheck
 ;; This setting specifically for Windows
+;; http://juanjose.garciaripoll.com/blog/my-emacs-windows-configuration/
 ;; https://www.reddit.com/r/emacs/comments/8by3az/how_to_set_up_sell_check_for_emacs_in_windows/
 ;; general guide for downloading hundspell http://www.nextpoint.se/?p=656
 ;; Dictionary https://github.com/LibreOffice/dictionaries
 (use-package flyspell
   :init
-  (setenv "DICTPATH" "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\share\\hunspell")
+  ;; Dictionary folder. Download from https://github.com/LibreOffice/dictionaries
+  (setenv "DICTPATH" "C:/Users/ybka/AppData/Roaming/hunspell-1.3.2-3-w32/share/hunspell")
+  ;; (setenv "DICTPATH" "C:/Users/ybka/scoop/apps/msys2/current/mingw64/share/hunspell")
   ;; (setenv "DICTIONARY"  "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\share\\hunspell\\en_GB")
   :custom
   (ispell-program-name "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\bin\\hunspell.exe")
+  ;; ;;use the newest version installed via MSYS2
+  ;; (ispell-program-name "C:/Users/ybka/scoop/apps/msys2/2020-09-03/mingw64/bin/hunspell.exe") 
   (ispell-extra-args '("-p" ,(expand-file-name "hunspell" my-emacs-cache)) "Save dict common location")
   :hook ((text-mode markdown-mode) . flyspell-mode)
   :hook ((prog-mode
@@ -3436,6 +3616,18 @@ See `org-agenda-todo' for more details."
   (all-the-icons-octicon "file-binary")  ;; GitHub Octicon for Binary File
   (all-the-icons-faicon  "cogs")         ;; FontAwesome icon for cogs
   (all-the-icons-wicon   "tornado")      ;; Weather Icon for tornado
+
+  ;; A workaround for missing all-the-icons in neotree when starting emacs in client mode
+  ;; Ref:
+  ;;   - https://github.com/jaypei/emacs-neotree/issues/194
+  ;;   - https://emacs.stackexchange.com/questions/24609/determine-graphical-display-on-startup-for-emacs-server-client
+  (defun new-frame-setup (frame)
+    (if (display-graphic-p frame)
+        (setq neo-theme 'icons)))
+  ;; Run for already-existing frames (For single instance emacs)
+  (mapc 'new-frame-setup (frame-list))
+  ;; Run when a new frame is created (For emacs in client/server mode)
+  (add-hook 'after-make-frame-functions 'new-frame-setup)
   )
 
 (use-package doom-modeline
@@ -3473,6 +3665,15 @@ The icons may not be showed correctly in terminal and on Windows.")
                       :box '(:line-width 6 :color "#565063")
                       :overline nil
                       :underline nil)
+
+  ;; enable modeline icons with daemon mode
+  ;; http://sodaware.sdf.org/notes/emacs-daemon-doom-modeline-icons/
+  (defun enable-doom-modeline-icons (_frame)
+    (setq doom-modeline-icon t))
+  
+  (add-hook 'after-make-frame-functions 
+            #'enable-doom-modeline-icons)
+  
   )
 
 
@@ -3540,14 +3741,16 @@ With PRUNE, prune the build cache and the build directory."
 
 ;;;; Weather
 (use-package weather-metno
-  :straight t
   :bind (:map my-personal-map
               ("w" . weather-metno-forecast))
-  :config
+  :init
   (setq weather-metno-location-name "Oslo, Norge"
         weather-metno-location-latitude 59
-        weather-metno-location-longitude 10)
+        weather-metno-location-longitude 10
+        )
+  (setq with-editor-emacsclient-executable "emacsclient")
 
+  :config
   ;; ;; change icon size
   ;; (setq weather-metno-use-imagemagick t)
   ;; (setq weather-metno-get-image-props '(:width 10 :height 10 :ascent center))
