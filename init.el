@@ -2833,6 +2833,9 @@ if there is displayed buffer that have shell it will use that window"
   (org-block ((t (:inherit default))))
 
   :config
+  ;; when using ox-hugo with #+filetags
+  (setq org-use-tag-inheritance t)
+
   ;; Exclude DONE state tasks from refile targets
   (defun ybk/verify-refile-target ()
     "Exclude todo keywords with a done state from refile targets"
