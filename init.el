@@ -1059,6 +1059,68 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 
 ;;; Window and Buffer management
+;; Transparency
+;; https://www.emacswiki.org/emacs/TransparentEmacs
+(use-package transparency
+  :disabled
+  :straight nil
+  :bind* ("C-c t" . toggle-transparency)
+  :init
+  ;; set default transparency
+  (set-frame-parameter (selected-frame) 'alpha '(85 . 50))
+  ;; (add-to-list 'default-frame-alist '(alpha . (85 . 50)))
+  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+
+  (defun toggle-transparency ()
+    (interactive)
+    (let ((alpha (frame-parameter nil 'alpha)))
+      (set-frame-parameter
+       nil 'alpha
+       (if (eql (cond ((numberp alpha) alpha)
+                      ((numberp (cdr alpha)) (cdr alpha))
+                      ;; Also handle undocumented (<active> <inactive>) form.
+                      ((numberp (cadr alpha)) (cadr alpha)))
+                100)
+           '(85 . 50) '(100 . 100)))))
+
+  ;; (global-set-key (kbd "C-c t") 'toggle-transparency)
+  
+  ;; Set transparency of emacs
+  (defun transparency (value)
+    "Sets the transparency of the frame window. 0=transparent/100=opaque"
+    (interactive "nTransparency Value 0 - 100 opaque:")
+    (set-frame-parameter (selected-frame) 'alpha value))
+  )
+
+(use-package highlight-frame
+  ;; Change color of inactive buffer
+  ;; https://emacs.stackexchange.com/questions/24630/is-there-a-way-to-change-color-of-active-windows-fringe
+  :disabled
+  :straight nil
+  :bind* (:map my-personal-map
+               ("h" . flash-active-buffer))
+  :init
+  (make-face 'flash-active-buffer-face)
+  (set-face-attribute 'flash-active-buffer-face nil
+                      :background "grey" :foreground nil)
+  (defun flash-active-buffer ()
+    (interactive)
+    (run-at-time "100 millisec" nil
+                 (lambda (remap-cookie)
+                   (face-remap-remove-relative remap-cookie))
+                 (face-remap-add-relative 'default 'flash-active-buffer-face)))
+  
+  ;; (defun highlight-selected-window ()
+  ;;   "Highlight selected window with a different background color."
+  ;;   (walk-windows (lambda (w)
+  ;;                   (unless (eq w (selected-window))
+  ;;                     (with-current-buffer (window-buffer w)
+  ;;                       (buffer-face-set '(:background "#111"))))))
+  ;;   (buffer-face-set 'default))
+  ;; (add-hook 'buffer-list-update-hook 'highlight-selected-window)
+  )
+
+
 (use-package resize-window
   :straight nil
   :init
@@ -1129,16 +1191,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (use-package windmove
   :straight nil
-  :bind (
-         ("s-j" . windmove-down)
-         ("s-k" . windmove-up)
-         ("s-h" . windmove-left)
-         ("s-l" . windmove-right)
-         ("C-x <down>" . windmove-down)
+  :bind (("C-x <down>" . windmove-down)
          ("C-x <up>" . windmove-up)
          ("C-x <left>" . windmove-left)
-         ("C-x <right>" . windmove-right)
-         )
+         ("C-x <right>" . windmove-right))
   )
 
 (use-package window
@@ -1224,11 +1280,15 @@ horizontal mode."
   :bind ([S-return] . ace-window)
   :custom-face (aw-leading-char-face ((t (:inherit ace-jump-face-foreground :height 3.0))))
   :config
-  (setq
-   ;; Home row is more convenient. Use home row keys that prioritize fingers that don't move.
-   aw-keys '(?j ?k ?l ?f ?d ?s ?g ?h ?\; ?a)
-   aw-scope 'visible)
+  ;; Home row is more convenient. Use home row keys that prioritize fingers that don't move.
+  ;; (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  (setq aw-keys '(?j ?k ?l ?f ?d ?s ?g ?h ?\; ?a))
+  ;; Work across frames set to global. Else offer only windows of current frame
+  (setq aw-scope 'frame)
+  ;; Dim buffer
+  (setq aw-background t)
   )
+
 
 (use-package winner
   ;; Enable window restoration
