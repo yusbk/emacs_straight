@@ -287,8 +287,7 @@
 ;;; Cache related
 ;;;; Things that use the catche folder
 (use-package recentf
-  :defer 5
-  :init
+  :config
   (defun suppress-messages (func &rest args)
     "Suppress message output from FUNC."
     ;; Some packages are too noisy.
@@ -300,12 +299,12 @@
         (advice-remove 'message #'silence))))
   :config
   (setq recentf-save-file (expand-file-name "recentf" my-emacs-cache)
-        recentf-max-saved-items 'nil ;; Save the whole list
-        recentf-max-menu-items 50
+        recentf-max-saved-items 500 ;; Save the whole list
+        recentf-max-menu-items 15
         ;; Cleanup list if idle for 10 secs
         recentf-auto-cleanup 10)
-  ;; save it every 10 minutes
-  (run-at-time t (* 10 60) 'recentf-save-list)
+  ;; save it every 5 minutes
+  (run-at-time t (* 5 60) 'recentf-save-list)
   ;;Suppress output "Wrote /home/ybka/.emacs.d/catche/recentf"
   (advice-add 'recentf-save-list :around #'suppress-messages)
   ;;Suppress output "Cleaning up the recentf list...done (0 removed)"
@@ -1095,14 +1094,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package highlight-frame
   ;; Change color of inactive buffer
   ;; https://emacs.stackexchange.com/questions/24630/is-there-a-way-to-change-color-of-active-windows-fringe
-  :disabled
+  ;; :disabled
   :straight nil
   :bind* (:map my-personal-map
                ("h" . flash-active-buffer))
   :init
   (make-face 'flash-active-buffer-face)
   (set-face-attribute 'flash-active-buffer-face nil
-                      :background "grey" :foreground nil)
+                      :background "#955" :foreground nil)
   (defun flash-active-buffer ()
     (interactive)
     (run-at-time "100 millisec" nil
@@ -1110,14 +1109,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                    (face-remap-remove-relative remap-cookie))
                  (face-remap-add-relative 'default 'flash-active-buffer-face)))
   
-  ;; (defun highlight-selected-window ()
-  ;;   "Highlight selected window with a different background color."
-  ;;   (walk-windows (lambda (w)
-  ;;                   (unless (eq w (selected-window))
-  ;;                     (with-current-buffer (window-buffer w)
-  ;;                       (buffer-face-set '(:background "#111"))))))
-  ;;   (buffer-face-set 'default))
-  ;; (add-hook 'buffer-list-update-hook 'highlight-selected-window)
+  (defun highlight-selected-window ()
+    "Highlight selected window with a different background color."
+    (walk-windows (lambda (w)
+                    (unless (eq w (selected-window))
+                      (with-current-buffer (window-buffer w)
+                        (buffer-face-set '(:background "grey20"))))))
+    (buffer-face-set 'default))
+  (add-hook 'buffer-list-update-hook 'highlight-selected-window)
   )
 
 
@@ -2833,8 +2832,8 @@ if there is displayed buffer that have shell it will use that window"
   (org-block ((t (:inherit default))))
 
   :config
-  ;; when using ox-hugo with #+filetags
-  (setq org-use-tag-inheritance t)
+  ;; when using ox-hugo with #+filetags will be inherited in all post
+  ;; (setq org-use-tag-inheritance nil)
 
   ;; Exclude DONE state tasks from refile targets
   (defun ybk/verify-refile-target ()
@@ -3815,7 +3814,7 @@ With PRUNE, prune the build cache and the build directory."
 
   :config
   ;; ;; change icon size
-  ;; (setq weather-metno-use-imagemagick t)
+  ;; (setq weather-metno-use-imagemagick t)y
   ;; (setq weather-metno-get-image-props '(:width 10 :height 10 :ascent center))
   (setq weather-metno-get-image-props '(:ascent center))
   )
