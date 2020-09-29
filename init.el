@@ -1526,8 +1526,8 @@ Version 2017-09-01"
   ;; (projectile-mode +1)
 
   ;; Tetapkan project folder
-  (setq projectile-project-search-path '("c:/Users/ybka/Documents/GitFH"
-                                         "c:/Users/ybka/Documents/GitHub"))
+  (setq projectile-project-search-path '("c:/Git-work"
+                                         "c:/Git-personal"))
 
   ;; Don't consider my home dir as a project
   (add-to-list 'projectile-ignored-projects `,(concat (getenv "HOME") "/"))
@@ -1928,6 +1928,28 @@ In that case, insert the number."
 
 
 ;;;; Eshell
+(use-package git-shell
+  ;; use git-bash for windows
+  ;; ref https://emacs.stackexchange.com/questions/22049/git-bash-in-emacs-on-windows
+  :straight nil
+  :bind (:map my-personal-map
+              ("g" . git-bash))
+  :init
+  (if (equal system-type 'windows-nt)
+      (progn (setq explicit-shell-file-name
+                   "C:/Users/ybka/scoop/apps/git-with-openssh/current/bin/bash.exe")
+             (setq shell-file-name explicit-shell-file-name)
+             (setq explicit-bash.exe-args '("--login" "-i"))
+             (add-to-list 'exec-path "C:/Users/ybka/scoop/apps/git-with-openssh/current/bin")
+             (setenv "SHELL" shell-file-name)
+             (add-hook 'comint-output-filter-functions 'comint-strip-ctrl-m)))
+  
+  (defun git-bash () (interactive)
+         (let ((explicit-shell-file-name "C:/Users/ybka/scoop/apps/git-with-openssh/current/bin/bash.exe" ))
+           (call-interactively 'shell)))
+  )
+
+
 ;; Emacs command shell
 (use-package eshell
   :straight nil
@@ -1943,10 +1965,10 @@ In that case, insert the number."
                          (eshell/alias "ll" "ls -l")
                          (eshell/alias "la" "ls -al")
                          ;;Git things
-                         (eshell/alias "gitp" "cd c:/Users/ybka/Documents/GitHub/$1 && ls -la")
-                         (eshell/alias "gitpp" "cd c:/Users/ybka/Documents/GitHub && ls -la")
-                         (eshell/alias "gitf" "cd c:/Users/ybka/Documents/GitFH/$1 && ls -la")
-                         (eshell/alias "gitff" "cd c:/Users/ybka/Documents/GitFH && ls -la")
+                         (eshell/alias "gitp" "cd c:/Git-personal/$1 && ls -la")
+                         (eshell/alias "gitpp" "cd c:/Git-personal && ls -la")
+                         (eshell/alias "gitw" "cd c:/Git-work/$1 && ls -la")
+                         (eshell/alias "gitww" "cd c:/Git-work && ls -la")
                          (eshell/alias "gc" "git checkout $1")
                          (eshell/alias "gf" "git fetch $1")
                          (eshell/alias "gm" "git merge $1")
@@ -1955,9 +1977,9 @@ In that case, insert the number."
                          (eshell/alias "gs" "git status")
                          ;; (eshell/alias "gp" "cd ~/Git-personal")
                          ;; (eshell/alias "gf" "cd ~/Git-fhi")
+                         (eshell/alias "cdh" "cd H:/")
                          (eshell/alias "cdc" "cd C:/")
                          (eshell/alias "cdy" "cd c:/Users/ybka") ;personal folder
-                         (eshell/alias "cd1" "cd c:/Users/ybka/OneDrive - Folkehelseinstituttet/")
                          ;; folkehelseprofil mappen
                          (eshell/alias "cdf" "cd F:/Prosjekter/Kommunehelsa")
                          (eshell/alias "cdt" "cd f:/Prosjekter/Kommunehelsa/TESTOMRAADE/TEST_KHFUN")))
