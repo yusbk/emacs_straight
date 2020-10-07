@@ -3361,6 +3361,7 @@ made unique when necessary."
   ;; Custom agenda
   (org-agenda-custom-commands
    '(
+     ("r" tags "REFILE")
      ("w" "Work Agenda"
       ((agenda "" nil)
        (todo "NEXT"
@@ -3390,6 +3391,7 @@ made unique when necessary."
        (tags "REFILE"
              ((org-agenda-overriding-header "Refile:")
               (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
+      ;; try this if the method to filter above doesn't work
       ((org-agenda-tag-filter-preset '("-@work"))))
      ("d" "deadlines"
       ((agenda ""
