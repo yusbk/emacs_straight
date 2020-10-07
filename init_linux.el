@@ -2642,6 +2642,7 @@ if there is displayed buffer that have shell it will use that window"
   ;; https://github.com/louabill/ado-mode
   ;; :straight (ado-mode :type git :host github :repo "louabill/ado-mode")
   :straight nil
+  :disabled
   :load-path "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/lisp"
   :mode (("\\.do" . ado-mode)
          ("\\.ado" . ado-mode))
