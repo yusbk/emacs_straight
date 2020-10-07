@@ -3281,6 +3281,8 @@ made unique when necessary."
    ("t" . org-agenda-schedule)
    ("d" . my/org-agenda-mark-done)
    ("n" . my/org-agenda-mark-next)
+   :map my-personal-map
+   ("o" . hydra-org-agenda-view/body)
    )
 
   :init
@@ -3412,6 +3414,7 @@ made unique when necessary."
        (tags "recepi")))
      ))
 
+  
   :config
   (defun my/org-agenda-mark-done (&optional _arg)
     "Mark current TODO as DONE.
@@ -3424,6 +3427,57 @@ See `org-agenda-todo' for more details."
 See `org-agenda-todo' for more details."
     (interactive "P")
     (org-agenda-todo "NEXT"))
+
+  ;; Hydra http://oremacs.com/2016/04/04/hydra-doc-syntax/
+  (defun org-agenda-cts ()
+    (let ((args (get-text-property
+                 (min (1- (point-max)) (point))
+                 'org-last-args)))
+      (nth 2 args)))
+
+  (defhydra hydra-org-agenda-view (:hint none)
+    "
+    _d_: ?d? day        _g_: time grid=?g? _a_: arch-trees    _l_: show-log
+    _w_: ?w? week       _[_: inactive      _A_: arch-files    _L_: log-4
+    _t_: ?t? fortnight  _f_: follow=?f?    _r_: report=?r?    _c_: clockcheck
+    _m_: ?m? month      _e_: entry =?e?    _D_: diary=?D?
+    _y_: ?y? year     _SPC_: reset         _!_: deadline      _q_: quit"
+    ("SPC" org-agenda-reset-view)
+    ("d" org-agenda-day-view
+     (if (eq 'day (org-agenda-cts))
+         "[x]" "[ ]"))
+    ("w" org-agenda-week-view
+     (if (eq 'week (org-agenda-cts))
+         "[x]" "[ ]"))
+    ("t" org-agenda-fortnight-view
+     (if (eq 'fortnight (org-agenda-cts))
+         "[x]" "[ ]"))
+    ("m" org-agenda-month-view
+     (if (eq 'month (org-agenda-cts)) "[x]" "[ ]"))
+    ("y" org-agenda-year-view
+     (if (eq 'year (org-agenda-cts)) "[x]" "[ ]"))
+    ("l" org-agenda-log-mode
+     (format "% -3S" org-agenda-show-log))
+    ("L" (org-agenda-log-mode '(4)))
+    ("c" (org-agenda-log-mode 'clockcheck))
+    ("f" org-agenda-follow-mode
+     (format "% -3S" org-agenda-follow-mode))
+    ("a" org-agenda-archives-mode)
+    ("A" (org-agenda-archives-mode 'files))
+    ("r" org-agenda-clockreport-mode
+     (format "% -3S" org-agenda-clockreport-mode))
+    ("e" org-agenda-entry-text-mode
+     (format "% -3S" org-agenda-entry-text-mode))
+    ("g" org-agenda-toggle-time-grid
+     (format "% -3S" org-agenda-use-time-grid))
+    ("D" org-agenda-toggle-diary
+     (format "% -3S" org-agenda-include-diary))
+    ("!" org-agenda-toggle-deadlines)
+    ("["
+     (let ((org-agenda-include-inactive-timestamps t))
+       (org-agenda-check-type t 'timeline 'agenda)
+       (org-agenda-redo)))
+    ("q" (message "Abort") :exit t))
   )
 
 
