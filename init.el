@@ -80,8 +80,8 @@
 
 
 ;; Early unbind keys for customization
-(unbind-key "C-s") ; Reserve for search related commands
-(bind-keys :prefix "C-s"
+(unbind-key "C-f") ; Reserve for search related commands
+(bind-keys :prefix "C-f"
            :prefix-map my-search-map)
 
 (unbind-key [f9]) ;; Reserve for hydra related commands
@@ -203,6 +203,7 @@
  (if (eq system-type 'windows-nt)
      'utf-16-le  ;; https://rufflewind.com/2014-07-20/pasting-unicode-in-emacs-on-windows
    'utf-8))
+
 (prefer-coding-system 'utf-8)
 
 ;;; Misc
@@ -410,8 +411,8 @@
   ;; bindings:
   ("M-l" . downcase-dwim)
   ("M-c" . capitalize-dwim)
-  ("M-u" . upcase-dwim)
-  ("C-8" . xah-toggle-letter-case)
+  ;; ("M-u" . upcase-dwim)
+  ("M-u" . xah-toggle-letter-case)
   ;; Super useful for "merging" lines together, overrides the much less
   ;; useful tab-to-tab-stop:
   ("M-i" . delete-indentation)
@@ -1975,6 +1976,8 @@ In that case, insert the number."
                          (eshell/alias "gb" "git branch $1")
                          (eshell/alias "gw" "git worktree list")
                          (eshell/alias "gs" "git status")
+                         (eshell/alias "gcm" "git commit -am '$1'")
+                         (eshell/alias "gps" "git push origin master --recurse-submodules=on-demand")
                          ;; (eshell/alias "gp" "cd ~/Git-personal")
                          ;; (eshell/alias "gf" "cd ~/Git-fhi")
                          (eshell/alias "cdh" "cd H:/")
@@ -3283,7 +3286,9 @@ made unique when necessary."
   (unless (file-exists-p my-org-directory)
     (make-directory my-org-directory))
 
-  (defvar my-org-todo (expand-file-name "todo.org" my-org-directory)
+  (defvar my-org-work (expand-file-name "work.org" my-org-directory)
+    "Unstructure capture")
+  (defvar my-org-home (expand-file-name "home.org" my-org-directory)
     "Unstructure capture")
   (defvar my-org-misc (expand-file-name "misc.org" my-org-directory)
     "All other info for diary.")
@@ -3297,7 +3302,8 @@ made unique when necessary."
 
   ;;Include all files under these folder in org-agenda-files
   (setq org-agenda-files `(,org-default-notes-file
-                           ,my-org-todo
+                           ,my-org-work
+                           ,my-org-home
                            ,my-org-misc
                            ,my-org-meet
                            ,my-org-cook))
@@ -3356,7 +3362,8 @@ made unique when necessary."
               ))
        (tags "@work"
              ((org-agenda-overriding-header "Skal gjøres:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))))
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))
+              ))
        (tags "REFILE"
              ((org-agenda-overriding-header "Refile:")
               (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
@@ -3371,7 +3378,10 @@ made unique when necessary."
                 (org-agenda-skip-deadline-if-done nil)))))
      ("m" "Meetings"
       ((agenda "" nil)
-       (tags "@meeting")))
+       (tags "@meeting"
+             (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+             ;; (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))
+             )))
      ("b" "bibliography"
       ((tags "CATEGORY=\"bib\"+LEVEL=2"
              ((org-agenda-overriding-header "")))))
