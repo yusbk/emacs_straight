@@ -3262,6 +3262,10 @@ made unique when necessary."
   (org-confirm-babel-evaluate nil "Don't ask to confirm evaluation."))
 
 
+;; (use-package org-super-agenda
+;;   ;;Ref https://github.com/alphapapa/org-super-agenda
+;;   :straight org)
+
 (use-package org-agenda
   ;; Here's where I set which files are added to org-agenda, which controls
   ;; org's global todo list, scheduling, and agenda features.  I use
@@ -3301,6 +3305,7 @@ made unique when necessary."
 
 
   ;;Include all files under these folder in org-agenda-files
+  ;; Check customized.el if all files are included
   (setq org-agenda-files `(,org-default-notes-file
                            ,my-org-work
                            ,my-org-home
@@ -3338,22 +3343,22 @@ made unique when necessary."
                               (tags . " %i %-12:c")
                               (search . " %i %-12:c")))
 
+
+  ;; (org-agenda-custom-commands
+  ;;  '(("h" "Agenda and Home-related tasks"
+  ;;     ((agenda)
+  ;;      (tags-todo "home")
+  ;;      (tags "garden"
+  ;;            ((org-agenda-sorting-strategy '(priority-up)))))
+  ;;     ((org-agenda-sorting-strategy '(priority-down))))
+  ;;    ("o" "Agenda and Office-related tasks"
+  ;;     ((agenda)
+  ;;      (tags-todo "@work")
+  ;;      (tags "office")))))
+  
   ;; Custom agenda
   (org-agenda-custom-commands
    '(
-     ("h" "Home Agenda"
-      ((agenda "" nil)
-       (todo "NEXT"
-             ((org-agenda-max-entries 5)
-              (org-agenda-overriding-header "Dagens oppgaver:")
-              ))
-       (tags "@home"
-             ((org-agenda-overriding-header "Samlet oppgaver:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))))
-       (tags "REFILE"
-             ((org-agenda-overriding-header "Refile:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
-      ((org-agenda-tag-filter-preset '("-@work"))))
      ("w" "Work Agenda"
       ((agenda "" nil)
        (todo "NEXT"
@@ -3367,7 +3372,23 @@ made unique when necessary."
        (tags "REFILE"
              ((org-agenda-overriding-header "Refile:")
               (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
-      ((org-agenda-tag-filter-preset '("-@home"))))
+      ;; ((org-agenda-tag-filter-preset '("-@home")))
+      ((org-agenda-skip-function
+        '(org-agenda-skip-entry-if 'regexp ":@home:")))
+      )
+     ("h" "Home Agenda"
+      ((agenda "" nil)
+       (todo "NEXT"
+             ((org-agenda-max-entries 5)
+              (org-agenda-overriding-header "Dagens oppgaver:")
+              ))
+       (tags "@home"
+             ((org-agenda-overriding-header "Samlet oppgaver:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))))
+       (tags "REFILE"
+             ((org-agenda-overriding-header "Refile:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
+      ((org-agenda-tag-filter-preset '("-@work"))))
      ("d" "deadlines"
       ((agenda ""
                ((org-agenda-entry-types '(:deadline))
@@ -3382,9 +3403,6 @@ made unique when necessary."
              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
              ;; (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))
              )))
-     ("b" "bibliography"
-      ((tags "CATEGORY=\"bib\"+LEVEL=2"
-             ((org-agenda-overriding-header "")))))
      ("u" "unscheduled"
       ((todo  "TODO"
               ((org-agenda-overriding-header "Unscheduled tasks")
