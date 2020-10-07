@@ -80,8 +80,8 @@
 
 
 ;; Early unbind keys for customization
-(unbind-key "C-s") ; Reserve for search related commands
-(bind-keys :prefix "C-s"
+(unbind-key "C-f") ; Reserve for search related commands
+(bind-keys :prefix "C-f"
            :prefix-map my-search-map)
 
 (unbind-key [f9]) ;; Reserve for hydra related commands
@@ -294,8 +294,7 @@
 ;;; Cache related
 ;;;; Things that use the catche folder
 (use-package recentf
-  :defer 5
-  :init
+  :config
   (defun suppress-messages (func &rest args)
     "Suppress message output from FUNC."
     ;; Some packages are too noisy.
@@ -307,8 +306,8 @@
         (advice-remove 'message #'silence))))
   :config
   (setq recentf-save-file (expand-file-name "recentf" my-emacs-cache)
-        recentf-max-saved-items 'nil ;; Save the whole list
-        recentf-max-menu-items 50
+        recentf-max-saved-items 500 ;; Save the whole list
+        recentf-max-menu-items 15
         ;; Cleanup list if idle for 10 secs
         recentf-auto-cleanup 10)
   ;; save it every 10 minutes
@@ -418,8 +417,8 @@
   ;; bindings:
   ("M-l" . downcase-dwim)
   ("M-c" . capitalize-dwim)
-  ("M-u" . upcase-dwim)
-  ("C-8" . xah-toggle-letter-case)
+  ;; ("M-u" . upcase-dwim)
+  ("M-u" . xah-toggle-letter-case)
   ;; Super useful for "merging" lines together, overrides the much less
   ;; useful tab-to-tab-stop:
   ("M-i" . delete-indentation)
@@ -1109,7 +1108,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init
   (make-face 'flash-active-buffer-face)
   (set-face-attribute 'flash-active-buffer-face nil
-                      :background "grey" :foreground nil)
+                      :background "#955" :foreground nil)
   (defun flash-active-buffer ()
     (interactive)
     (run-at-time "100 millisec" nil
@@ -1122,7 +1121,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     (walk-windows (lambda (w)
                     (unless (eq w (selected-window))
                       (with-current-buffer (window-buffer w)
-                        (buffer-face-set '(:background "grey25"))))))
+                        (buffer-face-set '(:background "grey20"))))))
     (buffer-face-set 'default))
   (add-hook 'buffer-list-update-hook 'highlight-selected-window)
   )
@@ -2844,8 +2843,8 @@ if there is displayed buffer that have shell it will use that window"
   (org-block ((t (:inherit default))))
 
   :config
-  ;; when using ox-hugo with #+filetags inherit to all 
-  (setq org-use-tag-inheritance t)
+  ;; when using ox-hugo with #+filetags will be inherited in all post
+  ;; (setq org-use-tag-inheritance nil)
 
   ;; Exclude DONE state tasks from refile targets
   (defun ybk/verify-refile-target ()
@@ -3249,6 +3248,10 @@ made unique when necessary."
   (org-confirm-babel-evaluate nil "Don't ask to confirm evaluation."))
 
 
+;; (use-package org-super-agenda
+;;   ;;Ref https://github.com/alphapapa/org-super-agenda
+;;   :straight org)
+
 (use-package org-agenda
   ;; Here's where I set which files are added to org-agenda, which controls
   ;; org's global todo list, scheduling, and agenda features.  I use
@@ -3264,6 +3267,8 @@ made unique when necessary."
    ("t" . org-agenda-schedule)
    ("d" . my/org-agenda-mark-done)
    ("n" . my/org-agenda-mark-next)
+   :map my-personal-map
+   ("o" . hydra-org-agenda-view/body)
    )
 
   :init
@@ -3273,7 +3278,9 @@ made unique when necessary."
   (unless (file-exists-p my-org-directory)
     (make-directory my-org-directory))
 
-  (defvar my-org-todo (expand-file-name "todo.org" my-org-directory)
+  (defvar my-org-work (expand-file-name "work.org" my-org-directory)
+    "Unstructure capture")
+  (defvar my-org-home (expand-file-name "home.org" my-org-directory)
     "Unstructure capture")
   (defvar my-org-misc (expand-file-name "misc.org" my-org-directory)
     "All other info for diary.")
@@ -3286,8 +3293,10 @@ made unique when necessary."
 
 
   ;;Include all files under these folder in org-agenda-files
+  ;; Check customized.el if all files are included
   (setq org-agenda-files `(,org-default-notes-file
-                           ,my-org-todo
+                           ,my-org-work
+                           ,my-org-home
                            ,my-org-misc
                            ,my-org-meet
                            ,my-org-cook))
@@ -3325,6 +3334,24 @@ made unique when necessary."
   ;; Custom agenda
   (org-agenda-custom-commands
    '(
+     ("r" tags "REFILE")
+     ("w" "Work Agenda"
+      ((agenda "" nil)
+       (todo "NEXT"
+             ((org-agenda-max-entries 5)
+              (org-agenda-overriding-header "Dagens oppgaver:")
+              ))
+       (tags "@work"
+             ((org-agenda-overriding-header "Skal gjøres:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))
+              ))
+       (tags "REFILE"
+             ((org-agenda-overriding-header "Refile:")
+              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
+      ;; ((org-agenda-tag-filter-preset '("-@home")))
+      ((org-agenda-skip-function
+        '(org-agenda-skip-entry-if 'regexp ":@home:")))
+      )
      ("h" "Home Agenda"
       ((agenda "" nil)
        (todo "NEXT"
@@ -3337,20 +3364,8 @@ made unique when necessary."
        (tags "REFILE"
              ((org-agenda-overriding-header "Refile:")
               (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
+      ;; try this if the method to filter above doesn't work
       ((org-agenda-tag-filter-preset '("-@work"))))
-     ("w" "Work Agenda"
-      ((agenda "" nil)
-       (todo "NEXT"
-             ((org-agenda-max-entries 5)
-              (org-agenda-overriding-header "Dagens oppgaver:")
-              ))
-       (tags "@work"
-             ((org-agenda-overriding-header "Skal gjøres:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))))
-       (tags "REFILE"
-             ((org-agenda-overriding-header "Refile:")
-              (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED"))))))
-      ((org-agenda-tag-filter-preset '("-@home"))))
      ("d" "deadlines"
       ((agenda ""
                ((org-agenda-entry-types '(:deadline))
@@ -3361,10 +3376,10 @@ made unique when necessary."
                 (org-agenda-skip-deadline-if-done nil)))))
      ("m" "Meetings"
       ((agenda "" nil)
-       (tags "@meeting")))
-     ("b" "bibliography"
-      ((tags "CATEGORY=\"bib\"+LEVEL=2"
-             ((org-agenda-overriding-header "")))))
+       (tags "@meeting"
+             (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
+             ;; (org-agenda-skip-function '(org-agenda-skip-entry-if 'todo '("DONE" "NEXT" "CANCELLED")))
+             )))
      ("u" "unscheduled"
       ((todo  "TODO"
               ((org-agenda-overriding-header "Unscheduled tasks")
@@ -3386,6 +3401,57 @@ See `org-agenda-todo' for more details."
 See `org-agenda-todo' for more details."
     (interactive "P")
     (org-agenda-todo "NEXT"))
+
+  ;; Hydra http://oremacs.com/2016/04/04/hydra-doc-syntax/
+  (defun org-agenda-cts ()
+    (let ((args (get-text-property
+                 (min (1- (point-max)) (point))
+                 'org-last-args)))
+      (nth 2 args)))
+
+  (defhydra hydra-org-agenda-view (:hint none)
+    "
+    _d_: ?d? day        _g_: time grid=?g? _a_: arch-trees    _l_: show-log
+    _w_: ?w? week       _[_: inactive      _A_: arch-files    _L_: log-4
+    _t_: ?t? fortnight  _f_: follow=?f?    _r_: report=?r?    _c_: clockcheck
+    _m_: ?m? month      _e_: entry =?e?    _D_: diary=?D?
+    _y_: ?y? year     _SPC_: reset         _!_: deadline      _q_: quit"
+    ("SPC" org-agenda-reset-view)
+    ("d" org-agenda-day-view
+     (if (eq 'day (org-agenda-cts))
+         "[x]" "[ ]"))
+    ("w" org-agenda-week-view
+     (if (eq 'week (org-agenda-cts))
+         "[x]" "[ ]"))
+    ("t" org-agenda-fortnight-view
+     (if (eq 'fortnight (org-agenda-cts))
+         "[x]" "[ ]"))
+    ("m" org-agenda-month-view
+     (if (eq 'month (org-agenda-cts)) "[x]" "[ ]"))
+    ("y" org-agenda-year-view
+     (if (eq 'year (org-agenda-cts)) "[x]" "[ ]"))
+    ("l" org-agenda-log-mode
+     (format "% -3S" org-agenda-show-log))
+    ("L" (org-agenda-log-mode '(4)))
+    ("c" (org-agenda-log-mode 'clockcheck))
+    ("f" org-agenda-follow-mode
+     (format "% -3S" org-agenda-follow-mode))
+    ("a" org-agenda-archives-mode)
+    ("A" (org-agenda-archives-mode 'files))
+    ("r" org-agenda-clockreport-mode
+     (format "% -3S" org-agenda-clockreport-mode))
+    ("e" org-agenda-entry-text-mode
+     (format "% -3S" org-agenda-entry-text-mode))
+    ("g" org-agenda-toggle-time-grid
+     (format "% -3S" org-agenda-use-time-grid))
+    ("D" org-agenda-toggle-diary
+     (format "% -3S" org-agenda-include-diary))
+    ("!" org-agenda-toggle-deadlines)
+    ("["
+     (let ((org-agenda-include-inactive-timestamps t))
+       (org-agenda-check-type t 'timeline 'agenda)
+       (org-agenda-redo)))
+    ("q" (message "Abort") :exit t))
   )
 
 
