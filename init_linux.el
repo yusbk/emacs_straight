@@ -1961,6 +1961,8 @@ In that case, insert the number."
                          (eshell/alias "gb" "git branch $1")
                          (eshell/alias "gw" "git worktree list")
                          (eshell/alias "gs" "git status")
+                         (eshell/alias "gcm" "git commit -am '$1'")
+                         (eshell/alias "gps" "git push origin master --recurse-submodules=on-demand")
                          ;; blog
                          (eshell/alias "cdb" "cd ~/Git-personal/yusbk.github.io/org")
                          ;; encrypted folder
