@@ -3530,6 +3530,11 @@ See `org-agenda-todo' for more details."
   (setq org-pandoc-options '((standalone . t)))
   )
 
+(use-package org-pandoc-import
+  :straight (:host github
+                   :repo "tecosaur/org-pandoc-import"
+                   :files ("*.el" "filters" "preprocessors")))
+
 (use-package ox-hugo
   ;; Use Hugo to build site https://ox-hugo.scripter.co/
   :after ox
