@@ -1777,7 +1777,7 @@ Version 2017-09-01"
   
   ;; Rename for find-function
   (which-key-add-key-based-replacements
-    "C-s x" "find-xxx")
+    "C-f x" "find-xxx")
   )
 
 
