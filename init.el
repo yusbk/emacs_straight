@@ -3566,6 +3566,13 @@ See `org-capture-templates' for more information."
                    (function org-hugo-new-subtree-post-capture-template))))
   )
 
+(use-package ox-reveal
+  :straight (ox-reveal :type git
+                       :host github
+                       :repo "yjwen/org-reveal")
+  :config
+  (setq Org-Reveal-title-slide nil)
+  )
 
 (use-package org-eww
   ;; Org-eww lets me capture eww webpages with org-mode
