@@ -795,6 +795,39 @@ output file. %i path(s) are relative, while %o is absolute.")
   ;; (ivy-posframe-mode 1)
   )
 
+
+(use-package worf
+  ;; http://pragmaticemacs.com/emacs/insert-internal-org-mode-links-the-ivy-way/
+  :straight t
+  :after ivy
+  :bind (:map my-search-map
+              ("h" . worf-goto))
+  :config
+  ;; use ivy to insert a link to a heading in the current document
+  ;; based on `worf-goto`
+  (defun ybk/worf-insert-internal-link ()
+    "Use ivy to insert a link to a heading in the current `org-mode' document. Code is based on `worf-goto'."
+    (interactive)
+    (let ((cands (worf--goto-candidates)))
+      (ivy-read "Heading: " cands
+                :action 'ybk/worf-insert-internal-link-action)))
+
+
+  (defun ybk/worf-insert-internal-link-action (x)
+    "Insert link for `ybk/worf-insert-internal-link'"
+    ;; go to heading
+    (save-excursion
+      (goto-char (cdr x))
+      ;; store link
+      (call-interactively 'org-store-link)
+      )
+    ;; return to original point and insert link
+    (org-insert-last-stored-link 1)
+    ;; org-insert-last-stored-link adds a newline so delete this
+    (delete-char 1))
+  )
+
+
 ;;; Version-control
 
 ;;need to specify editor in git terminal with
@@ -1527,7 +1560,8 @@ Version 2017-09-01"
   ;; (projectile-mode +1)
 
   ;; Tetapkan project folder
-  (setq projectile-project-search-path '("c:/Git-work"
+  (setq projectile-project-search-path '("c:/Git-fhi"
+                                         "c:/Git-work"
                                          "c:/Git-personal"))
 
   ;; Don't consider my home dir as a project
@@ -1777,7 +1811,7 @@ Version 2017-09-01"
   
   ;; Rename for find-function
   (which-key-add-key-based-replacements
-    "C-f x" "find-xxx")
+    "C-f x" "find-func-var-lib")
   )
 
 
@@ -1970,6 +2004,8 @@ In that case, insert the number."
                          (eshell/alias "gitpp" "cd c:/Git-personal && ls -la")
                          (eshell/alias "gitw" "cd c:/Git-work/$1 && ls -la")
                          (eshell/alias "gitww" "cd c:/Git-work && ls -la")
+                         (eshell/alias "gitf" "cd c:/Git-fhi/$1 && ls -la")
+                         (eshell/alias "gitff" "cd c:/Git-fhi && ls -la")
                          (eshell/alias "gc" "git checkout $1")
                          (eshell/alias "gf" "git fetch $1")
                          (eshell/alias "gm" "git merge $1")
@@ -2363,7 +2399,8 @@ showing them."
   ;; lage direktori om ikke allerede finnes
   (unless (file-exists-p ybk/r-dir)
     (make-directory ybk/r-dir t))
-
+  ;; C-c C-f ess-eval-function
+  ;; C-c M-f ess-eval-function-and-go
   :bind (("C-c d" . ess-r-package-dev-map)
          ("C-c +" . my-add-column)
          ("C-c ," . my-add-match)
@@ -2379,7 +2416,7 @@ showing them."
          ("C-S-<tab>" . ess-indent-region-with-styler)
 
          :map inferior-ess-r-mode-map
-         ("C-S-<up>" . ess-readline) ;previous command from script
+         ("M-<up>" . ess-readline) ;previous command from script
          ("M--" . ess-cycle-assign)
          ("M-Q" . ess-interrupt)
          )
@@ -2777,6 +2814,7 @@ if there is displayed buffer that have shell it will use that window"
   ;; managing my schedule, managing my references and notes, writing
   ;; presentations, writing lecture slides, and pretty much anything
   ;; else.
+  ;; C-c - to cycle bullets style
   :straight org-plus-contrib
   :bind
   (("C-c l" . org-store-link)
@@ -3665,9 +3703,9 @@ See `org-capture-templates' for more information."
          :map flyspell-mode-map
          ("C-;" . flyspell-correct-wrapper)
          :map my-assist-map
-         ("L-<left>" . flyspell-correct-previous)
-         ("L-<right>" . flyspell-correct-next)
-         ("L-<return>" . flyspell-corrent-at-point )))
+         ("L k" . flyspell-correct-previous)
+         ("L l" . flyspell-correct-next)
+         ("L p" . flyspell-corrent-at-point )))
 
 (use-package flyspell-correct-ivy
   :after flyspell-correct)
@@ -3695,8 +3733,8 @@ See `org-capture-templates' for more information."
   ;; utk tukar tema f10-t
   (setq my-themes '(doom-nord
                     doom-acario-light
-                    doom-acario-dark
-                    ;; doom-gruvbox
+                    doom-gruvbox
+                    doom-plain
                     ;; doom-tomorrow-day
                     ;; doom-solarized-dark
                     ))
