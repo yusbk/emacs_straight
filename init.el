@@ -3970,7 +3970,7 @@ With PRUNE, prune the build cache and the build directory."
 
   :config
   ;; ;; change icon size
-  ;; (setq weather-metno-use-imagemagick t)y
+  ;; (setq weather-metno-use-imagemagick t)
   ;; (setq weather-metno-get-image-props '(:width 10 :height 10 :ascent center))
   (setq weather-metno-get-image-props '(:ascent center))
   )

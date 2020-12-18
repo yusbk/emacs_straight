@@ -801,6 +801,39 @@ output file. %i path(s) are relative, while %o is absolute.")
   ;; (ivy-posframe-mode 1)
   )
 
+
+(use-package worf
+  ;; http://pragmaticemacs.com/emacs/insert-internal-org-mode-links-the-ivy-way/
+  :straight t
+  :after ivy
+  :bind (:map my-search-map
+              ("h" . worf-goto))
+  :config
+  ;; use ivy to insert a link to a heading in the current document
+  ;; based on `worf-goto`
+  (defun ybk/worf-insert-internal-link ()
+    "Use ivy to insert a link to a heading in the current `org-mode' document. Code is based on `worf-goto'."
+    (interactive)
+    (let ((cands (worf--goto-candidates)))
+      (ivy-read "Heading: " cands
+                :action 'ybk/worf-insert-internal-link-action)))
+
+
+  (defun ybk/worf-insert-internal-link-action (x)
+    "Insert link for `ybk/worf-insert-internal-link'"
+    ;; go to heading
+    (save-excursion
+      (goto-char (cdr x))
+      ;; store link
+      (call-interactively 'org-store-link)
+      )
+    ;; return to original point and insert link
+    (org-insert-last-stored-link 1)
+    ;; org-insert-last-stored-link adds a newline so delete this
+    (delete-char 1))
+  )
+
+
 ;;; Version-control
 
 ;;need to specify editor in git terminal with
@@ -1295,6 +1328,7 @@ horizontal mode."
   (setq aw-background t)
   )
 
+
 (use-package winner
   ;; Enable window restoration
   :defer 1
@@ -1783,7 +1817,7 @@ Version 2017-09-01"
 
   ;; Rename for find-function
   (which-key-add-key-based-replacements
-    "C-s x" "find-xxx")
+    "C-f x" "find-func-var-lib")
   )
 
 
@@ -2367,7 +2401,7 @@ showing them."
          ("C-S-<tab>" . ess-indent-region-with-styler)
 
          :map inferior-ess-r-mode-map
-         ("C-S-<up>" . ess-readline) ;previous command from script
+         ("M-<up>" . ess-readline) ;previous command from script
          ("M--" . ess-cycle-assign)
          ("M-Q" . ess-interrupt)
          )
@@ -3541,6 +3575,13 @@ See `org-capture-templates' for more information."
                    (function org-hugo-new-subtree-post-capture-template))))
   )
 
+(use-package ox-reveal
+  :straight (ox-reveal :type git
+                       :host github
+                       :repo "yjwen/org-reveal")
+  :config
+  (setq Org-Reveal-title-slide nil)
+  )
 
 (use-package org-eww
   ;; Org-eww lets me capture eww webpages with org-mode
@@ -3634,9 +3675,9 @@ See `org-capture-templates' for more information."
          :map flyspell-mode-map
          ("C-;" . flyspell-correct-wrapper)
          :map my-assist-map
-         ("L-<left>" . flyspell-correct-previous)
-         ("L-<right>" . flyspell-correct-next)
-         ("L-<return>" . flyspell-corrent-at-point )))
+         ("L k" . flyspell-correct-previous)
+         ("L l" . flyspell-correct-next)
+         ("L p" . flyspell-corrent-at-point )))
 
 (use-package flyspell-correct-ivy
   :after flyspell-correct)
@@ -3664,8 +3705,8 @@ See `org-capture-templates' for more information."
   ;; utk tukar tema f10-t
   (setq my-themes '(doom-nord
                     doom-acario-light
-                    doom-acario-dark
-                    ;; doom-gruvbox
+                    doom-gruvbox
+                    doom-plain
                     ;; doom-tomorrow-day
                     ;; doom-solarized-dark
                     ))
