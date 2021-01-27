@@ -8,3 +8,9 @@ To revert all packages to the revisions specified in the lockfile run `M-x strai
 To update packages, use `M-x straight-pull-all`, else you can use `straight-fetch-all` and then `straight-merge-all`
 
 For references on different useful arguments for `straight` can be found here [Github site](https://github.com/raxod502/straight.el#version-control-operations "github").
+
+## Local pc
+
+The folder for this git repo is at *~/.emacs.d/emacs_straight* in my work laptop with Windows OS.
+When using Linux pc at work or private the file *init_linux.el* should be used by renaming it to
+standard *init.el*.
