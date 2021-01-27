@@ -2007,21 +2007,23 @@ In that case, insert the number."
                          (eshell/alias "gitf" "cd c:/Git-fhi/$1 && ls -la")
                          (eshell/alias "gitff" "cd c:/Git-fhi && ls -la")
                          (eshell/alias "gc" "git checkout $1")
+                         (eshell/alias "gcb" "git checkout -b $1")
+                         (eshell/alias "gb" "git branch $1")
                          (eshell/alias "gf" "git fetch $1")
                          (eshell/alias "gm" "git merge $1")
-                         (eshell/alias "gb" "git branch $1")
                          (eshell/alias "gw" "git worktree list")
                          (eshell/alias "gs" "git status")
                          (eshell/alias "gcm" "git commit -am '$1'")
                          (eshell/alias "gps" "git push origin master --recurse-submodules=on-demand")
                          ;; (eshell/alias "gp" "cd ~/Git-personal")
                          ;; (eshell/alias "gf" "cd ~/Git-fhi")
+                         (eshell/alias "cdn" "cd N:/")
                          (eshell/alias "cdh" "cd H:/")
                          (eshell/alias "cdc" "cd C:/")
                          (eshell/alias "cdy" "cd c:/Users/ybka") ;personal folder
                          ;; folkehelseprofil mappen
-                         (eshell/alias "cdf" "cd F:/Prosjekter/Kommunehelsa")
-                         (eshell/alias "cdt" "cd f:/Prosjekter/Kommunehelsa/TESTOMRAADE/TEST_KHFUN")))
+                         (eshell/alias "cdf" "cd 'f:/Forskningsprosjekter/PDB 2455 - Helseprofiler og til_/PRODUKSJON'")
+                         ))
   :config
   (setq eshell-list-files-after-cd t) ;ls after cd
 
@@ -3731,9 +3733,9 @@ See `org-capture-templates' for more information."
   (doom-themes-org-config)
 
   ;; utk tukar tema f10-t
-  (setq my-themes '(doom-nord
+  (setq my-themes '(doom-gruvbox
                     doom-acario-light
-                    doom-gruvbox
+                    doom-nord
                     doom-plain
                     ;; doom-tomorrow-day
                     ;; doom-solarized-dark
