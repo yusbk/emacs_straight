@@ -864,7 +864,7 @@ output file. %i path(s) are relative, while %o is absolute.")
          ("C-x G" . magit-dispatch))
   :config
   ;; Enable magit-file-mode, to enable operations that touches a file, such as log, blame
-  (global-magit-file-mode)
+  ;; (global-magit-file-mode)
 
   ;; Prettier looks, and provides dired diffs
   (use-package diff-hl
@@ -2695,7 +2695,7 @@ if there is displayed buffer that have shell it will use that window"
   ;; https://github.com/louabill/ado-mode
   ;; :straight (ado-mode :type git :host github :repo "louabill/ado-mode")
   :straight nil
-  :load-path "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/lisp"
+  :load-path "H:/Dropbox/lisp/ado-mode-1.16.1.1/lisp"
   :mode (("\\.do" . ado-mode)
          ("\\.ado" . ado-mode))
   ;; :hook (ado-mode . company-mode)
@@ -2705,11 +2705,11 @@ if there is displayed buffer that have shell it will use that window"
   :hook (ado-mode . smartparens-strict-mode)
   :custom
   ;; (ado-script-dir "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/scripts")
-  (ado-mode-home "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/")
+  (ado-mode-home "H:/Dropbox/lisp/ado-mode-1.16.1.1/")
   (ado-script-dir
-   "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/scripts")
+   "H:/Dropbox/lisp/ado-mode-1.16.1.1/scripts")
   (ado-site-template-dir
-   "C:/Users/ybka/AppData/Roaming/lisp/ado-mode-1.16.1.1/templates/")
+   "H:/Dropbox/lisp/ado-mode-1.16.1.1/templates/")
   )
 
 ;;; Markdown
@@ -2794,7 +2794,7 @@ if there is displayed buffer that have shell it will use that window"
 
 
 ;;; Latex
-;;pdf-tools is better but difficult to get it in Windows
+;;pdf-tools is better but difficult to get it work in Windows
 (use-package doc-view
   :defer t
   :custom
@@ -3325,39 +3325,8 @@ made unique when necessary."
    ("o" . hydra-org-agenda-view/body)
    )
 
-  :init
-  ;; create org folder if doesn't exist
-  (defvar my-org-directory "~/Dropbox/org")
-  ;;(defvar my-org-directory "C:/Users/ybka/OneDrive - Folkehelseinstituttet/Dropbox/org")
-  (unless (file-exists-p my-org-directory)
-    (make-directory my-org-directory))
-
-  (defvar my-org-work (expand-file-name "work.org" my-org-directory)
-    "Unstructure capture")
-  (defvar my-org-home (expand-file-name "home.org" my-org-directory)
-    "Unstructure capture")
-  (defvar my-org-misc (expand-file-name "misc.org" my-org-directory)
-    "All other info for diary.")
-  (defvar my-org-note (expand-file-name "notes.org" my-org-directory)
-    "All other info for diary.")
-  (defvar my-org-meet (expand-file-name "meeting.org" my-org-directory)
-    "All other info for diary.")
-  (defvar my-org-cook (expand-file-name "cooking.org" my-org-directory)
-    "All other info for diary.")
-
-
-  ;;Include all files under these folder in org-agenda-files
-  ;; Check customized.el if all files are included
-  (setq org-agenda-files `(,org-default-notes-file
-                           ,my-org-work
-                           ,my-org-home
-                           ,my-org-misc
-                           ,my-org-meet
-                           ,my-org-cook))
-  (setq org-agenda-text-search-extra-files `(,my-org-note))
-
   :custom
-  (org-directory "~/Dropbox/org/" "Kept in sync with syncthing.")
+  (org-directory "H:/Dropbox/org/" "Kept in sync with syncthing.")
   ;; (org-directory "C:/Users/ybka/OneDrive - Folkehelseinstituttet/Dropbox/org/" "Kept in sync with sync thing")
   (org-default-notes-file (concat org-directory "refile.org"))
   (org-agenda-skip-deadline-if-done t "Remove done deadlines from agenda.")
@@ -3458,6 +3427,37 @@ made unique when necessary."
 
   
   :config
+  ;; create org folder if doesn't exist
+  (defvar my-org-directory "H:/Dropbox/org")
+  ;;(defvar my-org-directory "C:/Users/ybka/OneDrive - Folkehelseinstituttet/Dropbox/org")
+  (unless (file-exists-p my-org-directory)
+    (make-directory my-org-directory))
+
+  (defvar my-org-work (expand-file-name "work.org" my-org-directory)
+    "Unstructure capture")
+  (defvar my-org-home (expand-file-name "home.org" my-org-directory)
+    "Unstructure capture")
+  (defvar my-org-misc (expand-file-name "misc.org" my-org-directory)
+    "All other info for diary.")
+  (defvar my-org-note (expand-file-name "notes.org" my-org-directory)
+    "All other info for diary.")
+  (defvar my-org-meet (expand-file-name "meeting.org" my-org-directory)
+    "All other info for diary.")
+  (defvar my-org-cook (expand-file-name "cooking.org" my-org-directory)
+    "All other info for diary.")
+
+
+  ;;Include all files under these folder in org-agenda-files
+  ;; Check customized.el if all files are included
+  (setq org-agenda-files `(,org-default-notes-file
+                           ,my-org-work
+                           ,my-org-home
+                           ,my-org-misc
+                           ,my-org-meet
+                           ,my-org-cook))
+  (setq org-agenda-text-search-extra-files `(,my-org-note))
+
+
   (defun my/org-agenda-mark-done (&optional _arg)
     "Mark current TODO as DONE.
 See `org-agenda-todo' for more details."
@@ -3660,11 +3660,11 @@ See `org-capture-templates' for more information."
 (use-package flyspell
   :init
   ;; Dictionary folder. Download from https://github.com/LibreOffice/dictionaries
-  (setenv "DICTPATH" "C:/Users/ybka/AppData/Roaming/hunspell-1.3.2-3-w32/share/hunspell")
+  (setenv "DICTPATH" "H:/Dropbox/hunspell-1.3.2-3-w32/share/hunspell")
   ;; (setenv "DICTPATH" "C:/Users/ybka/scoop/apps/msys2/current/mingw64/share/hunspell")
   ;; (setenv "DICTIONARY"  "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\share\\hunspell\\en_GB")
   :custom
-  (ispell-program-name "C:\\Users\\ybka\\AppData\\Roaming\\hunspell-1.3.2-3-w32\\bin\\hunspell.exe")
+  (ispell-program-name "H:/Dropbox/hunspell-1.3.2-3-w32/bin/hunspell.exe")
   ;; ;;use the newest version installed via MSYS2
   ;; (ispell-program-name "C:/Users/ybka/scoop/apps/msys2/2020-09-03/mingw64/bin/hunspell.exe") 
   (ispell-extra-args '("-p" ,(expand-file-name "hunspell" my-emacs-cache)) "Save dict common location")
@@ -3832,6 +3832,9 @@ See `org-capture-templates' for more information."
 
 
 (use-package all-the-icons
+  ;; Run M-x all-the-icons-install-fonts to install all-the-icons. This will download the files. You just specify any
+  ;; folder and easiest is to use default folder. The open the folder where the files were downloaded. Double click on
+  ;; each file, and click "install" button to install the fonts.
   :config
   (all-the-icons-octicon "file-binary")  ;; GitHub Octicon for Binary File
   (all-the-icons-faicon  "cogs")         ;; FontAwesome icon for cogs
@@ -3851,7 +3854,6 @@ See `org-capture-templates' for more information."
   )
 
 (use-package doom-modeline
-  ;; Run M-x all-the-icons-install-fonts to install all-the-icons
   :straight t
   :custom
   (doom-modeline-buffer-file-name-style 'truncate-with-project)
