@@ -557,7 +557,7 @@ Version 2019-11-24"
     "
  Up^^             Down^^           Miscellaneous           % 2(mc/num-cursors) cursor%s(if (> (mc/num-cursors) 1) \"s\" \"\")
 ------------------------------------------------------------------
- [_p_]   Next     [_n_]   Next     [_l_] Edit lines  [_0_] Insert numbers
+ [_p_]   Previous [_n_]   Next     [_l_] Edit lines  [_0_] Insert numbers
  [_P_]   Skip     [_N_]   Skip     [_a_] Mark all    [_A_] Insert letters
  [_M-p_] Unmark   [_M-n_] Unmark   [_s_] Search
  [Click] Cursor at point       [_q_] Quit"
@@ -3033,9 +3033,9 @@ match.  See also `prettify-symbols-compose-predicate'."
   ;;###autoload
   (defmacro unpackaged/def-org-maybe-surround (&rest keys)
     "Define and bind interactive commands for each of KEYS that surround the region or insert text.
-Commands are bound in `org-mode-map' to each of KEYS.  If the
-region is active, commands surround it with the key character,
-otherwise call `org-self-insert-command'."
+  Commands are bound in `org-mode-map' to each of KEYS.  If the
+  region is active, commands surround it with the key character,
+  otherwise call `org-self-insert-command'."
     `(progn
        ,@(cl-loop for key in keys
                   for name = (intern (concat "unpackaged/org-maybe-surround-" key))
